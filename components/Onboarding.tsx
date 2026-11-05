@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { t } from "@/lib/i18n";
 
 /**
  * First-run: a short splash, then "Who's using Ghar Tak?". The choice is kept in this browser only
@@ -72,14 +73,14 @@ export default function Onboarding({ splash, ask, current, onPick, onDone }: {
           <img className="ob-logo" src="/icons/logo.svg" alt="" width={88} height={88} />
           <h1 className="ob-name">Ghar Tak</h1>
           <p className="ob-deva">घर तक</p>
-          <p className="ob-tag">The way home that still has people around.</p>
+          <p className="ob-tag">{t("The way home that still has people around.")}</p>
         </div>
       ) : (
         <div className="ob-ask">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/logo.svg" alt="" width={44} height={44} />
-          <h2>Who&apos;s using Ghar Tak?</h2>
-          <p className="muted">We&apos;ll keep things simple for you. You can change this any time.</p>
+          <h2>{t("Who's using Ghar Tak?")}</h2>
+          <p className="muted">{t("We'll keep things simple for you. You can change this any time.")}</p>
           <div className="ob-options">
             {PERSONAS.map((p, i) => (
               <button
@@ -87,11 +88,11 @@ export default function Onboarding({ splash, ask, current, onPick, onDone }: {
                 style={{ animationDelay: `${i * 70}ms` }} onClick={() => onPick(p.id)}
               >
                 <span className="ob-emoji" aria-hidden>{p.emoji}</span>
-                <span><b>{p.title}</b><small>{p.detail}</small></span>
+                <span><b>{t(p.title)}</b><small>{t(p.detail)}</small></span>
               </button>
             ))}
           </div>
-          <p className="small muted">Saved only on this device.</p>
+          <p className="small muted">{t("Saved only on this device.")}</p>
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import { COMPONENT_LABEL, KIND_COLORS, LEGEND, fmtDistance, fmtDuration, scoreCo
 import PlaceSearch, { Picked, reverseGeocode } from "./PlaceSearch";
 import AlongRoute, { lightLabel } from "./AlongRoute";
 import Icon, { IconName } from "./Icon";
+import { pl, rich, setLang, t, useLang } from "@/lib/i18n";
 import InstallApp from "./InstallApp";
 import { HelplineList, RouteHelp, SosButton } from "./Emergency";
 import Feedback, { FeedbackNudge } from "./Feedback";
@@ -189,6 +190,7 @@ function shortTime(iso: string): string {
 
 export default function App() {
   const { theme } = useTheme();
+  const lang = useLang();
   const desktop = useMedia("(min-width: 900px)");
   const vh = useViewportHeight();
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -448,8 +450,8 @@ export default function App() {
   const selMetro = metros.find((m) => m.id === selected) ?? null;
   const fewestChanges = metros.length > 1 ? Math.min(...metros.map((m) => m.ride.segments.length)) : -1;
   const timeLabel =
-    preset === "now" ? "Now" : preset === "custom" ? shortTime(`${custom}:00+05:30`) : PRESETS.find((p) => p.id === preset)!.label;
-  const scoreName = teen ? "teen score" : "night score";
+    preset === "now" ? t("Now") : preset === "custom" ? shortTime(`${custom}:00+05:30`) : t(PRESETS.find((p) => p.id === preset)!.label);
+  const scoreName = teen ? t("teen score") : t("night score");
 
   // Sheet geometry (phones). The plan card's bottom edge and the sheet's height also frame the map.
   const planBottom = 12 + planH;
@@ -529,7 +531,7 @@ export default function App() {
 
   const contactUs = (
     <p className="contact-dev">
-      <a href="mailto:swayamgupta999@gmail.com">Contact us</a>
+      <a href="mailto:swayamgupta999@gmail.com">{t("Contact us")}</a>
     </p>
   );
 
@@ -537,15 +539,15 @@ export default function App() {
     <>
       {metros.map((m, i) => {
         const changes = m.ride.segments.length - 1;
-        const label = i === 0 ? "Fastest by metro" : m.ride.segments.length === fewestChanges ? "Fewest changes" : `Change at ${m.ride.segments[1]?.from ?? ""}`;
+        const label = i === 0 ? t("Fastest by metro") : m.ride.segments.length === fewestChanges ? t("Fewest changes") : t("Change at {s}", { s: m.ride.segments[1]?.from ?? "" });
         return (
           <li key={m.id}>
             <button type="button" className={selected === m.id ? "rcard sel" : "rcard"} onClick={() => openRoute(m.id)}>
-              <Ring score={m.score} label="walk parts" />
+              <Ring score={m.score} label={t("walk parts")} />
               <span className="rc-main">
                 <span className="rc-top">
                   <strong>~{fmtDuration(m.duration)}</strong>
-                  <span className="muted">{changes === 0 ? "direct" : `${changes} change${changes > 1 ? "s" : ""}`}</span>
+                  <span className="muted">{changes === 0 ? t("direct") : t(pl(changes, "{n} change", "{n} changes"), { n: changes })}</span>
                 </span>
                 <span className="rc-why lines">
                   {m.ride.segments.map((sg, k) => (
@@ -554,7 +556,7 @@ export default function App() {
                 </span>
                 <span className="tags">
                   <span className={i === 0 ? "tag blue" : "tag"}>{label}</span>
-                  {i === 0 && m.duration < fastest && <span className="tag good">Faster than walking</span>}
+                  {i === 0 && m.duration < fastest && <span className="tag good">{t("Faster than walking")}</span>}
                 </span>
               </span>
               <Icon name="right" className="chev" />
@@ -611,10 +613,10 @@ export default function App() {
       <div className="view">
         <div className="view-head">
           <button type="button" className="icon-btn" aria-label="Back" onClick={() => setAbout(false)}><Icon name="left" /></button>
-          <h2>How Ghar Tak works</h2>
+          <h2>{t("How Ghar Tak works")}</h2>
         </div>
         <About meta={meta} />
-        <h3 className="section-title">Helplines</h3>
+        <h3 className="section-title">{t("Helplines")}</h3>
         <HelplineList />
         {contactUs}
       </div>
@@ -622,23 +624,21 @@ export default function App() {
   } else if (!from || !to) {
     body = (
       <div className="view home">
-        <h2>Where to tonight?</h2>
+        <h2>{t("Where to tonight?")}</h2>
         {persona === "parent" && (
           <div className="persona-tip">
-            <b>Following your child or family?</b> Ask them to open Ghar Tak, pick their route and tap <b>Start trip</b>.
-            You&apos;ll get a live link that shows where they are, and turns red if they don&apos;t answer a check-in.
+            {rich("**Following your child or family?** Ask them to open Ghar Tak, pick their route and tap **Start trip**. You'll get a live link that shows where they are, and turns red if they don't answer a check-in.")}
           </div>
         )}
         {persona === "teen" && (
           <div className="persona-tip">
-            <b>Teen mode is on.</b> Routes favour busy main roads, and <b>Start trip</b> keeps your guardians in the loop.
+            {rich("**Teen mode is on.** Routes favour busy main roads, and **Start trip** keeps your guardians in the loop.")}
           </div>
         )}
         <p className="lead">
-          Search two places, or tap the map to drop A, then B. Ghar Tak checks every route for the hour you&apos;ll be on
-          it: what&apos;s open, how lit and busy it is, and where help is.
+          {t("Search two places, or tap the map to drop A, then B. Ghar Tak checks every route for the hour you'll be on it: what's open, how lit and busy it is, and where help is.")}
         </p>
-        <h3 className="section-title">Emergency helplines</h3>
+        <h3 className="section-title">{t("Emergency helplines")}</h3>
         <HelplineList />
         <p className="note">
           Covers Delhi, Gurugram and Manesar, Faridabad, Noida and Greater Noida, Ghaziabad, Sonipat, Bahadurgarh and
@@ -666,22 +666,22 @@ export default function App() {
           <Ring score={r.score} label={scoreName} />
           <div className="detail-title">
             <h2>{fmtDuration(r.duration)} · {fmtDistance(r.distance)}</h2>
-            <p className="muted">{r.via ? `via ${r.via}` : scoreName}</p>
+            <p className="muted">{r.via ? t("via {v}", { v: r.via }) : scoreName}</p>
           </div>
         </div>
         {sharedView && (
           <div className="shared-note">
             <Icon name="info" size={16} />
-            <span><b>Someone shared this route with you.</b> It&apos;s their plan, not their live location. To follow them live, ask them to tap <b>Start trip</b> and send you the link.</span>
+            <span>{rich("**Someone shared this route with you.** It's their plan, not their live location. To follow them live, ask them to tap **Start trip** and send you the link.")}</span>
           </div>
         )}
         <div className="tabs" role="tablist" aria-label="Route details">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tab === t.id ? "on" : ""}
-              onClick={() => setTab(t.id)}
+              key={tb.id} type="button" role="tab" aria-selected={tab === tb.id} className={tab === tb.id ? "on" : ""}
+              onClick={() => setTab(tb.id)}
             >
-              {t.label}
+              {t(tb.label)}
             </button>
           ))}
         </div>
@@ -692,7 +692,7 @@ export default function App() {
               <WhyList r={r} fastest={fastestRoute} mode={result.mode} onHelp={() => setTab("help")} />
               <FeedbackNudge tripKey={`${result.mode}|${from.point.join(",")}|${to.point.join(",")}`} onOpen={openFeedback} />
               <details className="how">
-                <summary>How this score is made</summary>
+                <summary>{t("How this score is made")}</summary>
                 <ScoreDetails r={r} mode={result.mode} />
               </details>
             </>
@@ -710,8 +710,8 @@ export default function App() {
         <div className="actions">
           <button type="button" className="btn start-trip" onClick={() => setTripStart(true)}>
             <Icon name="walk" />
-            Start trip
-            <small>check-ins and live location for your people</small>
+            {t("Start trip")}
+            <small>{t("check-ins and live location for your people")}</small>
           </button>
           <Share text={shareFor(r.id)} onImage={() => shareImage(r)} />
         </div>
@@ -722,12 +722,12 @@ export default function App() {
       <div className="view detail">
         <div className="detail-head">
           <button type="button" className="icon-btn" aria-label="Back to all routes" onClick={() => setDetail(false)}><Icon name="left" /></button>
-          <Ring score={selMetro.score} label="walk parts" />
+          <Ring score={selMetro.score} label={t("walk parts")} />
           <div className="detail-title">
-            <h2>~{fmtDuration(selMetro.duration)} · walk + metro</h2>
+            <h2>~{fmtDuration(selMetro.duration)} · {t("walk + metro")}</h2>
             <p className="muted">
-              {selMetro.ride.segments.length === 1 ? "Direct" : `${selMetro.ride.segments.length - 1} change${selMetro.ride.segments.length > 2 ? "s" : ""} at ${selMetro.ride.segments.slice(1).map((sg) => sg.from.replace(/\s*\(.*\)$/, "")).join(", ")}`}
-              {" · "}{fmtDistance(selMetro.walkDistance)} on foot
+              {selMetro.ride.segments.length === 1 ? t("Direct") : t(pl(selMetro.ride.segments.length - 1, "{n} change at {s}", "{n} changes at {s}"), { n: selMetro.ride.segments.length - 1, s: selMetro.ride.segments.slice(1).map((sg) => sg.from.replace(/\s*\(.*\)$/, "")).join(", ") })}
+              {" · "}{t("{d} on foot", { d: fmtDistance(selMetro.walkDistance) })}
             </p>
           </div>
         </div>
@@ -739,8 +739,8 @@ export default function App() {
         <div className="actions">
           <button type="button" className="btn start-trip" onClick={() => setTripStart(true)}>
             <Icon name="train" />
-            Start metro trip
-            <small>tracks your stations even underground</small>
+            {t("Start metro trip")}
+            <small>{t("tracks your stations even underground")}</small>
           </button>
           <Share text={shareFor(selMetro.id)} />
         </div>
@@ -756,21 +756,21 @@ export default function App() {
           </div>
         )}
         <div className="list-head">
-          <h2>{routes.length + metros.length === 1 ? "1 way home" : `${routes.length + metros.length} ways home`}</h2>
-          <span className="muted">scored for {fmtIst(result.depart)}</span>
+          <h2>{t(pl(routes.length + metros.length, "{n} way home", "{n} ways home"), { n: routes.length + metros.length })}</h2>
+          <span className="muted">{t("scored for {w}", { w: fmtIst(result.depart) })}</span>
         </div>
         {metroMode && !metro && (
           <div className="shared-note warn">
             <Icon name="train" size={16} />
-            <span><b>No metro option for this trip.</b> {result.metroClosed ?? "There's no station within walking distance at both ends, or the metro isn't faster than walking."} Walking routes below.</span>
+            <span><b>{t("No metro option for this trip.")}</b> {result.metroClosed ? (lang === "hi" ? t("The metro isn't running for the whole ride at this time.") : result.metroClosed) : t("There's no station within walking distance at both ends, or the metro isn't faster than walking.")} {t("Walking routes below.")}</span>
           </div>
         )}
         <ol className="cards">
           {metroMode && metroCard}
           {routes.map((r) => {
             const tags = [
-              r.duration === fastest && { t: "Fastest", c: "amber" },
-              r.score === bestScore && routes.length > 1 && { t: teen ? "Top teen score" : "Top night score", c: "good" },
+              r.duration === fastest && { t: t("Fastest"), c: "amber" },
+              r.score === bestScore && routes.length > 1 && { t: teen ? t("Top teen score") : t("Top night score"), c: "good" },
             ].filter(Boolean) as { t: string; c: string }[];
             const s = r.stats;
             return (
@@ -781,14 +781,14 @@ export default function App() {
                     <span className="rc-top">
                       <strong>{fmtDuration(r.duration)}</strong>
                       <span className="muted">
-                        {r.duration > fastest + 30 ? `+${Math.round((r.duration - fastest) / 60)} min` : fmtDistance(r.distance)}
+                        {r.duration > fastest + 30 ? `+${t("{m} min", { m: Math.round((r.duration - fastest) / 60) })}` : fmtDistance(r.distance)}
                       </span>
                     </span>
                     <span className="rc-why">
-                      {s.openPlaces} open · {s.longestGap >= 100 ? `empty for ${fmtDistance(s.longestGap)}` : "no long empty stretch"}
+                      {t("{n} open", { n: s.openPlaces })} · {s.longestGap >= 100 ? t("empty for {d}", { d: fmtDistance(s.longestGap) }) : t("no long empty stretch")}
                     </span>
                     {tags.length > 0 && (
-                      <span className="tags">{tags.map((t) => <span key={t.t} className={`tag ${t.c}`}>{t.t}</span>)}</span>
+                      <span className="tags">{tags.map((tg) => <span key={tg.t} className={`tag ${tg.c}`}>{tg.t}</span>)}</span>
                     )}
                   </span>
                   <Icon name="right" className="chev" />
@@ -801,7 +801,7 @@ export default function App() {
         {result.metroClosed && (
           <p className="metro-closed">
             <Icon name="train" size={16} />
-            <span><b>No walk + metro option.</b> {result.metroClosed}</span>
+            <span><b>{t("No walk + metro option.")}</b> {lang === "hi" ? t("The metro isn't running for the whole ride at this time.") : result.metroClosed}</span>
           </p>
         )}
         <div className="actions inline"><Share text={shareFor(selected)} /></div>
@@ -847,9 +847,9 @@ export default function App() {
             <div className="plan-mini trip-banner">
               <span className="mini-route">
                 <span className="live-dot" />
-                <b>On your way to {session.to}</b>
+                <b>{t("On your way to {p}", { p: session.to })}</b>
               </span>
-              <span className="chip"><Icon name={session.mode === "walk" ? "walk" : "car"} size={15} />Trip</span>
+              <span className="chip"><Icon name={session.mode === "walk" ? "walk" : "car"} size={15} />{t("Trip")}</span>
             </div>
           ) : planCollapsed ? (
             <button
@@ -886,6 +886,12 @@ export default function App() {
                   >
                     <span aria-hidden>{PERSONAS.find((x) => x.id === persona)?.emoji ?? "👤"}</span>
                   </button>
+                  <button
+                    type="button" className="lang-chip" onClick={() => setLang(lang === "hi" ? "en" : "hi")}
+                    aria-label={lang === "hi" ? "Switch to English" : "हिन्दी में देखें"} title={lang === "hi" ? "English" : "हिन्दी"}
+                  >
+                    {lang === "hi" ? "EN" : "हिं"}
+                  </button>
                   <InstallApp />
                   <ThemeToggle />
                   <button type="button" className="icon-btn" aria-label="How Ghar Tak works" onClick={() => setAbout(true)}>
@@ -901,11 +907,11 @@ export default function App() {
               <div className="plan-fields">
                 <PlaceSearch
                   label="From" marker="A" value={from} bbox={meta?.bbox ?? null}
-                  placeholder="From: office, metro station, sector…" onPick={setFrom}
+                  placeholder={t("From: office, metro station, sector…")} onPick={setFrom}
                 />
                 <PlaceSearch
                   label="To" marker="B" value={to} bbox={meta?.bbox ?? null}
-                  placeholder="To: home, PG, hotel…" onPick={setTo}
+                  placeholder={t("To: home, PG, hotel…")} onPick={setTo}
                 />
                 <button
                   type="button" className="swap" aria-label="Swap start and destination" disabled={!from && !to}
@@ -920,7 +926,7 @@ export default function App() {
               {!from && (
                 <button type="button" className="link locate-link" onClick={useMyLocation}>
                   <Icon name="locate" size={15} />
-                  Use my location as the start
+                  {t("Use my location as the start")}
                 </button>
               )}
               <div className="plan-opts">
@@ -937,7 +943,7 @@ export default function App() {
                         }}
                       >
                         <Icon name={m === "walk" ? "walk" : m === "metro" ? "train" : "car"} size={16} />
-                        {m === "walk" ? "Walk" : m === "metro" ? "Metro" : "Cab"}
+                        {m === "walk" ? t("Walk") : m === "metro" ? t("Metro") : t("Cab")}
                       </button>
                     );
                   })}
@@ -954,7 +960,7 @@ export default function App() {
                   title="Teen mode: stricter ranking. Open, busy main roads first; short empty stretches only"
                 >
                   <Icon name="teen" size={15} />
-                  Teen
+                  {t("Teen")}
                 </button>
               </div>
               {timeOpen && (
@@ -969,7 +975,7 @@ export default function App() {
                           setTimeOpen(false);
                         }}
                       >
-                        {p.label}
+                        {t(p.label)}
                       </button>
                     ))}
                     <input
@@ -985,7 +991,7 @@ export default function App() {
               )}
               {teen && (
                 <p className="teen-note">
-                  <b>Teen mode is on:</b> open, busy main roads rank first, and long empty stretches count more.
+                  {rich("**Teen mode is on:** open, busy main roads rank first, and long empty stretches count more.")}
                 </p>
               )}
             </>
@@ -1026,7 +1032,7 @@ export default function App() {
         {layersOpen && (
           <div className="layers" aria-label="Map layers">
             <div className="layers-head">
-              <b>Show on map</b>
+              <b>{t("Show on map")}</b>
               <button type="button" className="icon-btn" aria-label="Close" onClick={() => setLayersOpen(false)}><Icon name="x" size={16} /></button>
             </div>
             <div className="layers-grid">
@@ -1094,26 +1100,26 @@ function WhyList({ r, fastest, mode, onHelp }: { r: ScoredRoute; fastest: Scored
   const light = r.components.light ?? 0;
   const first = [...r.emergency].sort((a, b) => a.at - b.at)[0];
   const items: { tone: "good" | "warn" | "bad"; icon: IconName; b: string; t: string }[] = [];
-  const vsFastest = fastest && fastest.id !== r.id ? `, vs ${fastest.stats.openPlaces} on the fastest route` : "";
   items.push({
     tone: s.openPlaces >= (fastest?.stats.openPlaces ?? 0) ? "good" : "warn", icon: "store",
-    b: `${s.openPlaces} place${s.openPlaces === 1 ? "" : "s"} open`, t: ` when you pass${vsFastest}`,
+    b: t(pl(s.openPlaces, "{n} place open", "{n} places open"), { n: s.openPlaces }),
+    t: fastest && fastest.id !== r.id ? t(" when you pass, vs {n} on the fastest route", { n: fastest.stats.openPlaces }) : t(" when you pass"),
   });
   items.push({
     tone: s.longestGap > quiet * 4 ? "bad" : s.longestGap > quiet ? "warn" : "good", icon: s.longestGap > quiet ? "alert" : "check",
-    b: s.longestGap >= 100 ? `Longest empty stretch: ${fmtDistance(s.longestGap)}` : "No long empty stretch",
-    t: s.longestGap >= 100 ? `${s.longestGapDark ? ", and it's dark" : ""}. Red dashes on the map` : "",
+    b: s.longestGap >= 100 ? t("Longest empty stretch: {d}", { d: fmtDistance(s.longestGap) }) : t("No long empty stretch"),
+    t: s.longestGap >= 100 ? (s.longestGapDark ? t(", and it's dark") : "") + t(". Red dashes on the map") : "",
   });
   items.push({
-    tone: light >= 0.8 ? "good" : light >= 0.5 ? "warn" : "bad", icon: "bulb", b: lightLabel(r),
-    t: `: ${s.lamps} street lamp${s.lamps === 1 ? "" : "s"} mapped, ${s.meanRadiance >= 30 ? "bright" : s.meanRadiance >= 15 ? "moderate" : "dim"} on satellite`,
+    tone: light >= 0.8 ? "good" : light >= 0.5 ? "warn" : "bad", icon: "bulb", b: t(lightLabel(r)),
+    t: t(": {n} street lamps mapped, {lvl} on satellite", { n: s.lamps, lvl: t(s.meanRadiance >= 30 ? "bright" : s.meanRadiance >= 15 ? "moderate" : "dim") }),
   });
   items.push({
-    tone: s.mainRoadShare >= 0.4 ? "good" : "warn", icon: "road", b: `${Math.round(s.mainRoadShare * 100)}% on main roads`,
-    t: s.smallRoadShare >= 0.5 ? `, ${Math.round(s.smallRoadShare * 100)}% internal lanes` : "",
+    tone: s.mainRoadShare >= 0.4 ? "good" : "warn", icon: "road", b: t("{p}% on main roads", { p: Math.round(s.mainRoadShare * 100) }),
+    t: s.smallRoadShare >= 0.5 ? t(", {p}% internal lanes", { p: Math.round(s.smallRoadShare * 100) }) : "",
   });
   if (r.components.cameras !== null) {
-    items.push({ tone: "good", icon: "cam", b: `${s.cameras} CCTV camera${s.cameras === 1 ? "" : "s"}`, t: " mapped beside the route" });
+    items.push({ tone: "good", icon: "cam", b: t("{n} CCTV cameras", { n: s.cameras }), t: t(" mapped beside the route") });
   }
   return (
     <>
@@ -1131,14 +1137,14 @@ function WhyList({ r, fastest, mode, onHelp }: { r: ScoredRoute; fastest: Scored
           <span className="hp-text">
             <b>{first.name}</b>
             <span className="muted">
-              {first.kind === "police" ? "Police" : "Hospital"} · {fmtDistance(first.at)} into the trip
+              {first.kind === "police" ? t("Police") : t("Hospital")} · {t("{d} into the trip", { d: fmtDistance(first.at) })}
             </span>
           </span>
-          {first.phone && <a className="hp-call" href={`tel:${first.phone}`}><Icon name="phone" size={14} />Call</a>}
-          <button type="button" className="link" onClick={onHelp}>All help</button>
+          {first.phone && <a className="hp-call" href={`tel:${first.phone}`}><Icon name="phone" size={14} />{t("Call")}</a>}
+          <button type="button" className="link" onClick={onHelp}>{t("All help")}</button>
         </div>
       ) : (
-        <p className="note">No hospital or police station mapped close to this route. In an emergency, call 112.</p>
+        <p className="note">{t("No hospital or police station mapped close to this route. In an emergency, call 112.")}</p>
       )}
     </>
   );
@@ -1151,16 +1157,13 @@ function TeenBox({ r, mode, depart }: { r: ScoredRoute; mode: Mode; depart: stri
   const quietLimit = mode === "walk" ? 300 : 2500;
   return (
     <div className="teen-box">
-      <b>Teen mode</b>
+      <b>{t("Teen mode")}</b>
       <ul>
         {s.longestGap > quietLimit && (
-          <li>
-            This route has a {fmtDistance(s.longestGap)} stretch with nothing open. Prefer a route with a higher teen score,
-            or a cab.
-          </li>
+          <li>{t("This route has a {d} stretch with nothing open. Prefer a route with a higher teen score, or a cab.", { d: fmtDistance(s.longestGap) })}</li>
         )}
-        {late && <li>It&apos;s late. Ask a parent or guardian to pick you up, or send them your trip before you leave.</li>}
-        <li>Use the button below to send your route and location to your guardians.</li>
+        {late && <li>{t("It's late. Ask a parent or guardian to pick you up, or send them your trip before you leave.")}</li>}
+        <li>{t("Use the button below to send your route and location to your guardians.")}</li>
       </ul>
       <HelplineList compact />
     </div>
@@ -1191,21 +1194,21 @@ function MetroBreakdown({ m }: { m: MetroOption }) {
       <ol className="journey">
         <li className="walk">
           <span className="j-dot" />
-          <div><b>Walk {fmtDistance(leg1.distance)}</b> to <b>{m.board.station}</b> station
-            <div className="muted small">{fmtDuration(leg1.duration)} · night score {leg1.score ?? "–"} · {summary(leg1)[0]}</div></div>
+          <div>{rich("**Walk {d}** to **{s}** station", { d: fmtDistance(leg1.distance), s: m.board.station })}
+            <div className="muted small">{fmtDuration(leg1.duration)} · {t("night score {s}", { s: leg1.score ?? "–" })} · {summary(leg1)[0]}</div></div>
         </li>
         {m.ride.segments.map((sg, i) => (
           <li key={i} className="ride" style={{ "--lc": sg.colour } as React.CSSProperties}>
             <span className="j-dot" />
             <div>
-              {i > 0 && <div className="j-change"><Icon name="swap" size={14} />Change at <b>{sg.from}</b></div>}
-              <div><span className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span> towards <b>{sg.towards}</b></div>
+              {i > 0 && <div className="j-change"><Icon name="swap" size={14} />{rich("Change at **{s}**", { s: sg.from })}</div>}
+              <div><span className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span> {rich("towards **{d}**", { d: sg.towards })}</div>
               <div className="muted small">
-                Board at {sg.from} · {sg.stops} stop{sg.stops === 1 ? "" : "s"} · get off at <b>{sg.to}</b>
+                {rich("Board at {a} · {n} stops · get off at **{b}**", { a: sg.from, n: sg.stops, b: sg.to })}
               </div>
               {sg.stations.length > 2 && (
                 <details className="j-stops">
-                  <summary>{sg.stations.length - 2} stops in between</summary>
+                  <summary>{t("{n} stops in between", { n: sg.stations.length - 2 })}</summary>
                   <ol>{sg.stations.slice(1, -1).map((st) => <li key={st.name}>{st.name}</li>)}</ol>
                 </details>
               )}
@@ -1214,12 +1217,12 @@ function MetroBreakdown({ m }: { m: MetroOption }) {
         ))}
         <li className="walk">
           <span className="j-dot" />
-          <div><b>Walk {fmtDistance(leg2.distance)}</b> from {m.alight.station} station, around {clock(m.alight.at)}
-            <div className="muted small">{fmtDuration(leg2.duration)} · night score {leg2.score ?? "–"} · {summary(leg2)[0]}</div></div>
+          <div>{rich("**Walk {d}** from {s} station, around {t}", { d: fmtDistance(leg2.distance), s: m.alight.station, t: clock(m.alight.at) })}
+            <div className="muted small">{fmtDuration(leg2.duration)} · {t("night score {s}", { s: leg2.score ?? "–" })} · {summary(leg2)[0]}</div></div>
         </li>
         <li className="end">
           <span className="j-dot" />
-          <div><b>Arrive around {clock(m.alight.arrive)}</b></div>
+          <div><b>{t("Arrive around {t}", { t: clock(m.alight.arrive) })}</b></div>
         </li>
       </ol>
       <p className="note">

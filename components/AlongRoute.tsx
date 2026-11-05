@@ -1,6 +1,7 @@
 "use client";
 
 import type { ScoredRoute } from "@/lib/score";
+import { t } from "@/lib/i18n";
 
 const SHOP_KINDS = new Set(["shop", "grocery", "food", "pharmacy", "mall", "fuel"]);
 
@@ -13,7 +14,7 @@ export function rushLevel(r: ScoredRoute): { label: string; detail: string } {
   const openPerKm = r.stats.openPlaces / km;
   const buses = r.buses.length;
   const level = openPerKm >= 10 || (openPerKm >= 6 && buses >= 3) ? "Busy" : openPerKm >= 3 || buses >= 2 ? "Some people" : "Quiet";
-  return { label: level, detail: `${openPerKm.toFixed(1)} open places per km · ${buses} bus route${buses === 1 ? "" : "s"}` };
+  return { label: level, detail: t("{p} open places per km · {b} bus routes", { p: openPerKm.toFixed(1), b: buses }) };
 }
 
 export function lightLabel(r: ScoredRoute) {
@@ -28,37 +29,39 @@ export default function AlongRoute({ r }: { r: ScoredRoute }) {
   const rush = rushLevel(r);
   return (
     <section className="along" aria-label="Along this route">
-      <h3>Along this route</h3>
+      <h3>{t("Along this route")}</h3>
       <div className="along-tiles">
         <div className="along-tile">
-          <span className="along-k">Street lights</span>
-          <b>{lightLabel(r)}</b>
+          <span className="along-k">{t("Street lights")}</span>
+          <b>{t(lightLabel(r))}</b>
           <span className="along-d">
-            {s.lamps} lamp{s.lamps === 1 ? "" : "s"} mapped · {Math.round(s.litTaggedShare * 100)}% of the way tagged lit · NASA
-            night light: {s.meanRadiance >= 30 ? "bright" : s.meanRadiance >= 15 ? "moderate" : "dim"}
+            {t("{n} lamps mapped · {p}% of the way tagged lit · NASA night light: {lvl}", {
+              n: s.lamps, p: Math.round(s.litTaggedShare * 100),
+              lvl: t(s.meanRadiance >= 30 ? "bright" : s.meanRadiance >= 15 ? "moderate" : "dim"),
+            })}
           </span>
         </div>
-        <div className="along-tile" title="Estimate from open places and bus routes, not live crowd data">
-          <span className="along-k">Rush (estimate)</span>
-          <b>{rush.label}</b>
+        <div className="along-tile" title={t("Estimate from open places and bus routes, not live crowd data")}>
+          <span className="along-k">{t("Rush (estimate)")}</span>
+          <b>{t(rush.label)}</b>
           <span className="along-d">{rush.detail}</span>
         </div>
         <div className="along-tile">
           <span className="along-k">CCTV</span>
-          <b>{r.components.cameras === null ? "Not mapped" : s.cameras}</b>
+          <b>{r.components.cameras === null ? t("Not mapped") : s.cameras}</b>
           <span className="along-d">
-            {r.components.cameras === null ? "No cameras mapped nearby in OpenStreetMap" : "cameras mapped beside the route"}
+            {r.components.cameras === null ? t("No cameras mapped nearby in OpenStreetMap") : t("cameras mapped beside the route")}
           </span>
         </div>
         <div className="along-tile">
-          <span className="along-k">Open shops</span>
+          <span className="along-k">{t("Open shops")}</span>
           <b>{openShops}</b>
-          <span className="along-d">shops, eateries, chemists and pumps open when you pass</span>
+          <span className="along-d">{t("shops, eateries, chemists and pumps open when you pass")}</span>
         </div>
       </div>
       {r.buses.length > 0 && (
         <div className="along-buses">
-          <span className="along-k">Buses along the way</span>
+          <span className="along-k">{t("Buses along the way")}</span>
           <div className="bus-chips">
             {r.buses.map((b) => (
               <span key={b.ref} className="bus-chip" title={`${b.name} · runs along ${(b.along / 1000).toFixed(1)} km of this route`}>

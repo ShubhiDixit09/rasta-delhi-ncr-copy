@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { loadContacts, sendToContacts } from "@/lib/contacts";
 import type { HelpPoint } from "@/lib/score";
 import { fmtDistance } from "./format";
+import { t } from "@/lib/i18n";
 
 /** National and NCR helplines. All are free to call from any phone. */
 export const HELPLINES: { number: string; label: string; detail: string; primary?: boolean }[] = [
@@ -21,11 +22,11 @@ export function HelplineList({ compact = false }: { compact?: boolean }) {
     <ul className={compact ? "helplines-list compact" : "helplines-list"}>
       {list.map((h) => (
         <li key={h.number} className={h.primary ? "primary" : ""}>
-          <a href={`tel:${h.number}`} aria-label={`Call ${h.label}, ${h.number}`}>
+          <a href={`tel:${h.number}`} aria-label={`${t("Call")} ${t(h.label)}, ${h.number}`}>
             <b>{h.number}</b>
             <span>
-              {h.label}
-              {!compact && <small>{h.detail}</small>}
+              {t(h.label)}
+              {!compact && <small>{t(h.detail)}</small>}
             </span>
           </a>
         </li>
@@ -47,14 +48,13 @@ export function SosButton() {
   const alertContacts = async () => {
     const list = loadContacts();
     if (!list.length) {
-      setStatus("No trusted contacts saved yet. Add them with “Send to my people” on any route.");
+      setStatus(t("No trusted contacts saved yet. Add them with “Send to my people” on any route."));
       return;
     }
-    setStatus("Getting your location…");
-    const { located } = await sendToContacts(list, "I need help. Please call me.");
+    setStatus(t("Getting your location…"));
+    const { located } = await sendToContacts(list, t("I need help. Please call me."));
     setStatus(
-      `Opening your messages app for ${list.length} contact${list.length === 1 ? "" : "s"}` +
-        (located ? " with your location" : " (location not available)") + ". Press send there.",
+      t(located ? "Opening your messages app for {n} contacts with your location. Press send there." : "Opening your messages app for {n} contacts (location not available). Press send there.", { n: list.length }),
     );
   };
 
@@ -65,16 +65,16 @@ export function SosButton() {
       </button>
       <dialog ref={dialog} className="sos-sheet" aria-labelledby="sos-title">
         <form method="dialog" className="contacts-head">
-          <h2 id="sos-title">Emergency</h2>
-          <button className="link">Close</button>
+          <h2 id="sos-title">{t("Emergency")}</h2>
+          <button className="link">{t("Close")}</button>
         </form>
-        <a className="sos-call" href="tel:112">Call 112</a>
+        <a className="sos-call" href="tel:112">{t("Call 112")}</a>
         <button type="button" className="btn sos-alert" onClick={alertContacts}>
-          Message my trusted contacts with my location
+          {t("Message my trusted contacts with my location")}
         </button>
         {status && <p className="share-status" aria-live="polite">{status}</p>}
         <HelplineList />
-        <p className="note">Calls go through your phone. On a computer, use your phone to call.</p>
+        <p className="note">{t("Calls go through your phone. On a computer, use your phone to call.")}</p>
       </dialog>
     </>
   );
@@ -88,25 +88,25 @@ export function RouteHelp({ points, total }: { points: HelpPoint[]; total: numbe
   if (!points.length) {
     return (
       <section className="route-help">
-        <h3>Help along this route</h3>
-        <p className="note">No hospital or police station mapped close to this route. Use 112 in an emergency.</p>
+        <h3>{t("Help along this route")}</h3>
+        <p className="note">{t("No hospital or police station mapped close to this route. Use 112 in an emergency.")}</p>
         <HelplineList compact />
       </section>
     );
   }
   return (
     <section className="route-help" aria-label="Help along this route">
-      <h3>Help along this route</h3>
+      <h3>{t("Help along this route")}</h3>
       <ul className="help-points">
         {points.map((p, i) => (
           <li key={i}>
             <div className="hp-top">
-              <span className={`hp-kind ${p.kind}`}>{p.kind === "police" ? "Police" : "Hospital"}</span>
+              <span className={`hp-kind ${p.kind}`}>{p.kind === "police" ? t("Police") : t("Hospital")}</span>
               <span className="hp-name">{p.name}</span>
               {p.phone ? (
-                <a className="hp-call" href={`tel:${p.phone}`}>Call</a>
+                <a className="hp-call" href={`tel:${p.phone}`}>{t("Call")}</a>
               ) : (
-                <span className="hp-nophone muted">no number listed</span>
+                <span className="hp-nophone muted">{t("no number listed")}</span>
               )}
             </div>
             <div className="hp-bar" role="img" aria-label={`${fmtDistance(p.at)} into the trip, ${fmtDistance(p.off)} off the route`}>
@@ -114,7 +114,7 @@ export function RouteHelp({ points, total }: { points: HelpPoint[]; total: numbe
               <span className={`hp-mark ${p.kind}`} style={{ left: `${Math.min(100, (p.at / Math.max(1, total)) * 100)}%` }} />
             </div>
             <div className="hp-meta muted">
-              {fmtDistance(p.at)} into the trip · {fmtDistance(p.off)} off the route{p.open ? "" : " · may be closed now"}
+              {t("{a} into the trip · {o} off the route", { a: fmtDistance(p.at), o: fmtDistance(p.off) })}{p.open ? "" : ` · ${t("may be closed now")}`}
               {p.phone && <> · {p.phone}</>}
             </div>
           </li>

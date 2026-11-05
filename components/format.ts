@@ -1,5 +1,6 @@
 import type { Component, ScoredRoute } from "@/lib/score";
 import type { Theme } from "@/lib/theme";
+import { t } from "@/lib/i18n";
 
 /** Place colours per theme: the light set is darker so pins stay visible on a light basemap. */
 export const KIND_COLORS: Record<Theme, Record<string, string>> = {
@@ -52,8 +53,8 @@ export function fmtDistance(m: number): string {
 
 export function fmtDuration(s: number): string {
   const min = Math.round(s / 60);
-  if (min < 60) return `${min} min`;
-  return `${Math.floor(min / 60)} h ${min % 60} min`;
+  if (min < 60) return t("{m} min", { m: min });
+  return t("{h} h {m} min", { h: Math.floor(min / 60), m: min % 60 });
 }
 
 /** One plain sentence per route, built only from measured stats. */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { rich, t } from "@/lib/i18n";
 
 interface InstallPrompt extends Event {
   prompt: () => Promise<void>;
@@ -44,7 +45,7 @@ export default function InstallApp() {
           setPrompt(null);
         }}
       >
-        Install app
+        {t("Install app")}
       </button>
     );
   }
@@ -52,11 +53,11 @@ export default function InstallApp() {
   return (
     <>
       <button type="button" className="install-btn" onClick={() => setTip(!tip)} aria-expanded={tip}>
-        Install app
+        {t("Install app")}
       </button>
       {tip && (
         <p className="install-tip">
-          In Safari, tap the Share button, then <b>Add to Home Screen</b>.
+          {rich("In Safari, tap the Share button, then **Add to Home Screen**.")}
         </p>
       )}
     </>

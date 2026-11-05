@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Contact, MAX_CONTACTS as MAX, loadContacts as load, normalisePhone, saveContacts as save, sendToContacts } from "@/lib/contacts";
 import Icon from "./Icon";
+import { pl, t } from "@/lib/i18n";
 
 /**
  * "Send to all": one tap opens the phone's SMS app with every trusted contact filled in and the
@@ -35,13 +36,11 @@ export default function TrustedContacts({ text }: { text: string }) {
       return;
     }
     setBusy(true);
-    setStatus("Getting your location…");
+    setStatus(t("Getting your location…"));
     const { located } = await sendToContacts(list, text);
     setBusy(false);
     setStatus(
-      `Opening your messages app for ${list.length} contact${list.length === 1 ? "" : "s"}` +
-        (located ? " with your current location" : " (location not shared)") +
-        ". Press send there.",
+      t(located ? "Opening your messages app for {n} contacts with your current location. Press send there." : "Opening your messages app for {n} contacts (location not shared). Press send there.", { n: list.length }),
     );
   };
 
@@ -51,11 +50,11 @@ export default function TrustedContacts({ text }: { text: string }) {
     <>
       <button type="button" className="btn primary" onClick={sendAll} disabled={busy}>
         <Icon name="users" />
-        {list.length ? `Send to ${list.length} contact${list.length === 1 ? "" : "s"}` : "Send to my people"}
+        {list.length ? t(pl(list.length, "Send to {n} contact", "Send to {n} contacts"), { n: list.length }) : t("Send to my people")}
       </button>
       {list.length > 0 && (
         <button type="button" className="link" onClick={() => dialog.current?.showModal()}>
-          Edit contacts
+          {t("Edit contacts")}
         </button>
       )}
       {status && <p className="share-status" aria-live="polite">{status}</p>}
@@ -120,12 +119,11 @@ export function ContactsDialog({
   return (
     <dialog ref={ref} className="contacts" aria-labelledby="contacts-title">
       <form method="dialog" className="contacts-head">
-        <h2 id="contacts-title">Trusted contacts</h2>
-        <button className="link">Done</button>
+        <h2 id="contacts-title">{t("Trusted contacts")}</h2>
+        <button className="link">{t("Done")}</button>
       </form>
       <p className="note">
-        Saved only on this device; Ghar Tak never receives them. &ldquo;Send to all&rdquo; opens your SMS app with
-        everyone filled in, plus your route, arrival time and current location. You press send.
+        {t("Saved only on this device; Ghar Tak never receives them. “Send to all” opens your SMS app with everyone filled in, plus your route, arrival time and current location. You press send.")}
       </p>
       {list.length > 0 ? (
         <ul className="contact-list">
@@ -136,25 +134,25 @@ export function ContactsDialog({
                 <span className="muted"> {c.phone}</span>
               </span>
               <button type="button" className="link" onClick={() => onChange(list.filter((x) => x.phone !== c.phone))}>
-                Remove
+                {t("Remove")}
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="muted">No contacts yet.</p>
+        <p className="muted">{t("No contacts yet.")}</p>
       )}
       {canPick && list.length < MAX && (
-        <button type="button" className="btn" onClick={pick}>Pick from phone contacts</button>
+        <button type="button" className="btn" onClick={pick}>{t("Pick from phone contacts")}</button>
       )}
       {list.length < MAX && (
         <form className="contact-form" onSubmit={addManual}>
-          <input aria-label="Name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+          <input aria-label={t("Name")} placeholder={t("Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
           <input
-            aria-label="Phone number" placeholder="Phone, e.g. 98xxxxxx10" inputMode="tel" value={phone}
+            aria-label={t("Phone number")} placeholder={t("Phone, e.g. 98xxxxxx10")} inputMode="tel" value={phone}
             onChange={(e) => setPhone(e.target.value)} maxLength={20} required
           />
-          <button className="btn">Add</button>
+          <button className="btn">{t("Add")}</button>
         </form>
       )}
       {error && <p className="error-inline">{error}</p>}

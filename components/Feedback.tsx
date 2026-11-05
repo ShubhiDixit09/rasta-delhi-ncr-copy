@@ -7,6 +7,7 @@ import type { MetroOption } from "@/lib/metro";
 import type { Mode } from "@/lib/routing";
 import type { ScoredRoute } from "@/lib/score";
 import { fmtDuration } from "./format";
+import { t } from "@/lib/i18n";
 
 interface Props {
   tripKey: string;
@@ -46,8 +47,8 @@ export function FeedbackNudge({ tripKey, onOpen }: { tripKey: string; onOpen: ()
     <button type="button" className="fb-nudge" onClick={onOpen}>
       <span className="fb-nudge-ic" aria-hidden>💛</span>
       <span>
-        <b>Help other women get home safer</b>
-        <small>Which route would you take? 2 taps · anonymous</small>
+        <b>{t("Help other women get home safer")}</b>
+        <small>{t("Which route would you take? 2 taps · anonymous")}</small>
       </span>
       <span className="fb-nudge-go" aria-hidden>›</span>
     </button>
@@ -86,7 +87,7 @@ export default function Feedback({ tripKey, mode, depart, from, to, routes, metr
   }, [tripKey]);
 
   if (!on || state === "hidden") return null;
-  if (state === "done") return <div className="feedback done">Thanks, that helps tune the score.</div>;
+  if (state === "done") return <div className="feedback done">{t("Thanks, that helps tune the score.")}</div>;
 
   const remember = () => {
     try {
@@ -97,9 +98,9 @@ export default function Feedback({ tripKey, mode, depart, from, to, routes, metr
   };
 
   const options = [
-    ...routes.map((r, i) => ({ id: `r${i}`, label: `Route ${i + 1}: ${fmtDuration(r.duration)}, score ${r.score ?? "–"}` })),
-    ...(metro ? [{ id: "metro", label: `Walk + metro: ~${fmtDuration(metro.duration)}` }] : []),
-    { id: "none", label: "None of these" },
+    ...routes.map((r, i) => ({ id: `r${i}`, label: t("Route {i}: {d}, score {s}", { i: i + 1, d: fmtDuration(r.duration), s: r.score ?? "–" }) })),
+    ...(metro ? [{ id: "metro", label: t("Walk + metro: ~{d}", { d: fmtDuration(metro.duration) }) }] : []),
+    { id: "none", label: t("None of these") },
   ];
 
   /** What was on screen: the selected route's numbers and shape (the server trims the ends). */
@@ -166,29 +167,28 @@ export default function Feedback({ tripKey, mode, depart, from, to, routes, metr
   return (
     <section className="feedback" aria-label="Quick feedback">
       <div className="fb-head">
-        <strong>💛 Help other women get home safer</strong>
-        <span className="muted">anonymous, 2 taps</span>
-        <button type="button" className="link" onClick={() => { remember(); setState("hidden"); }}>Not now</button>
+        <strong>💛 {t("Help other women get home safer")}</strong>
+        <span className="muted">{t("anonymous, 2 taps")}</span>
+        <button type="button" className="link" onClick={() => { remember(); setState("hidden"); }}>{t("Not now")}</button>
       </div>
-      <p className="fb-q">1. Which of these would you actually take?</p>
+      <p className="fb-q">1. {t("Which of these would you actually take?")}</p>
       {group({ name: "Route you would take", value: chosen, set: setChosen, items: options })}
-      <p className="fb-q">2. What matters most to you on this trip?</p>
+      <p className="fb-q">2. {t("What matters most to you on this trip?")}</p>
       {group({
         name: "What matters most", value: priority, set: setPriority,
-        items: CHOICES.priority.map((id) => ({ id, label: LABELS[id] })),
+        items: CHOICES.priority.map((id) => ({ id, label: t(LABELS[id]) })),
       })}
-      <p className="fb-q">3. Do you know this area at night? <span className="muted">(optional)</span></p>
+      <p className="fb-q">3. {t("Do you know this area at night?")} <span className="muted">({t("optional")})</span></p>
       {group({
         name: "Area at night", value: feel, set: setFeel,
-        items: CHOICES.feel.map((id) => ({ id, label: LABELS[id] })),
+        items: CHOICES.feel.map((id) => ({ id, label: t(LABELS[id]) })),
       })}
       {error && <p className="error-inline">{error}</p>}
       <button type="button" className="btn primary" disabled={!chosen || !priority || state === "sending"} onClick={submit}>
-        {state === "sending" ? "Sending…" : "Send"}
+        {state === "sending" ? t("Sending…") : t("Send")}
       </button>
       <p className="note">
-        Saved: your answers, the routes&apos; scores and times, the hour, and start/end rounded to about 1 km. No
-        names, exact addresses or IPs.
+        {t("Saved: your answers, the routes' scores and times, the hour, and start/end rounded to about 1 km. No names, exact addresses or IPs.")}
       </p>
     </section>
   );

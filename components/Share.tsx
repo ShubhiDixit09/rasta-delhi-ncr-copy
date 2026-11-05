@@ -7,6 +7,7 @@ import type { ScoredRoute } from "@/lib/score";
 import { fmtDistance, fmtDuration } from "./format";
 import Icon from "./Icon";
 import TrustedContacts from "./TrustedContacts";
+import { t } from "@/lib/i18n";
 
 interface TripText {
   route: ScoredRoute;
@@ -23,23 +24,24 @@ const time = (ms: number) =>
 export function shareText({ route, mode, fromLabel, toLabel, depart, url }: TripText): string {
   const start = new Date(depart).getTime();
   const eta = start + route.duration * 1000;
-  const how = mode === "walk" ? "walking" : "taking a cab";
-  const via = route.via ? ` via ${route.via}` : "";
+  const how = mode === "walk" ? t("walking") : t("taking a cab");
+  const via = route.via ? " " + t("via {v}", { v: route.via }) : "";
   return (
-    `I'm ${how} from ${fromLabel} to ${toLabel}. Leaving ${time(start)}, should reach around ${time(eta)} ` +
-    `(${fmtDuration(route.duration)}, ${fmtDistance(route.distance)}${via}).\n` +
-    `My planned route (not live location): ${url}`
+    t("I'm {how} from {a} to {b}. Leaving {s}, should reach around {e}", { how, a: fromLabel, b: toLabel, s: time(start), e: time(eta) }) +
+    ` (${fmtDuration(route.duration)}, ${fmtDistance(route.distance)}${via}).\n` +
+    t("My planned route (not live location): {u}", { u: url })
   );
 }
 
 export function metroShareText({ metro, fromLabel, toLabel, depart, url }: {
   metro: MetroOption; fromLabel: string; toLabel: string; depart: string; url: string;
 }): string {
-  const rides = metro.ride.segments.map((s) => `${s.line} to ${s.to}`).join(", then ");
+  const rides = metro.ride.segments.map((s) => t("{l} to {s}", { l: s.line, s: s.to })).join(", ");
   return (
-    `I'm going from ${fromLabel} to ${toLabel}: walking to ${metro.board.station} metro, ${rides}, then walking ` +
-    `${fmtDistance(metro.legs[1].distance)}. Leaving ${time(new Date(depart).getTime())}, should reach around ` +
-    `${time(new Date(metro.alight.arrive).getTime())}.\nMy planned route (not live location): ${url}`
+    t("I'm going from {a} to {b}: walking to {st} metro, {rides}, then walking {d}. Leaving {s}, should reach around {e}.", {
+      a: fromLabel, b: toLabel, st: metro.board.station, rides, d: fmtDistance(metro.legs[1].distance),
+      s: time(new Date(depart).getTime()), e: time(new Date(metro.alight.arrive).getTime()),
+    }) + "\n" + t("My planned route (not live location): {u}", { u: url })
   );
 }
 
@@ -59,7 +61,7 @@ export default function Share({ text, onImage }: { text: string; onImage?: () =>
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt("Copy this message:", text);
+      window.prompt(t("Copy this message:"), text);
     }
   };
 
@@ -68,7 +70,7 @@ export default function Share({ text, onImage }: { text: string; onImage?: () =>
       <div className="share-main">
         <button type="button" className="btn" onClick={() => setOpen(!open)} aria-expanded={open}>
           <Icon name="share" />
-          Share
+          {t("Share")}
         </button>
         <TrustedContacts text={text} />
       </div>
@@ -79,11 +81,11 @@ export default function Share({ text, onImage }: { text: string; onImage?: () =>
           </a>
           {canNativeShare && (
             <button type="button" className="btn" onClick={() => navigator.share({ text }).catch(() => undefined)}>
-              More apps…
+              {t("More apps…")}
             </button>
           )}
           <button type="button" className="btn" onClick={copy}>
-            {copied ? "Copied" : "Copy message"}
+            {copied ? t("Copied") : t("Copy message")}
           </button>
           {onImage && (
             <button
@@ -94,11 +96,11 @@ export default function Share({ text, onImage }: { text: string; onImage?: () =>
                 setMaking(false);
               }}
             >
-              {making ? "Making image…" : "Route image"}
+              {making ? t("Making image…") : t("Route image")}
             </button>
           )}
           {canNativeShare && (
-            <p className="note share-hint">For several WhatsApp chats at once, tap More apps…, choose WhatsApp, and select the chats.</p>
+            <p className="note share-hint">{t("For several WhatsApp chats at once, tap More apps…, choose WhatsApp, and select the chats.")}</p>
           )}
         </div>
       )}

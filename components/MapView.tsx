@@ -59,6 +59,8 @@ export interface Snapshot {
   end: [number, number];
 }
 
+const PLACE_LAYERS = ["places-help", "places-open", "places-closed", "places-cam"];
+
 const empty: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 export default function MapView({
@@ -108,7 +110,11 @@ export default function MapView({
       });
       m.on("mouseenter", "routes-alt", () => (m.getCanvas().style.cursor = "pointer"));
       m.on("mouseleave", "routes-alt", () => (m.getCanvas().style.cursor = ""));
-      m.on("click", "places", (e) => {
+      for (const id of PLACE_LAYERS) {
+        m.on("mouseenter", id, () => (m.getCanvas().style.cursor = "pointer"));
+        m.on("mouseleave", id, () => (m.getCanvas().style.cursor = ""));
+      }
+      m.on("click", PLACE_LAYERS, (e) => {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string | boolean>;
@@ -123,10 +129,8 @@ export default function MapView({
           .setDOMContent(popup(String(p.name || p.label), line, basis))
           .addTo(m);
       });
-      m.on("mouseenter", "places", () => (m.getCanvas().style.cursor = "pointer"));
-      m.on("mouseleave", "places", () => (m.getCanvas().style.cursor = ""));
       m.on("click", (e) => {
-        const hits = m.queryRenderedFeatures(e.point, { layers: ["places", "routes-alt", "ride"] });
+        const hits = m.queryRenderedFeatures(e.point, { layers: [...PLACE_LAYERS, "routes-alt", "ride"] });
         if (!hits.length) handlers.current.onPick([e.lngLat.lng, e.lngLat.lat]);
       });
 
@@ -323,7 +327,32 @@ function addOverlays(m: MlMap, theme: Theme) {
     m.addLayer({
       id: "routes-alt", type: "line", source: "routes", filter: ["!=", ["get", "selected"], true],
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": c.alt, "line-width": 5, "line-opacity": 0.8 },
+      paint: { "line-color": c.alt, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 15, 4], "line-opacity": 0.45 },
+    });
+    m.addLayer({
+      id: "places-closed", type: "circle", source: "places", minzoom: 15,
+      filter: ["all", ["==", ["get", "cls"], "place"], ["!", ["get", "open"]]],
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, 2.5, 18, 5],
+        "circle-color": c.hole, "circle-stroke-color": ["get", "color"], "circle-stroke-width": 1.2, "circle-opacity": 0.6,
+        "circle-stroke-opacity": 0.6,
+      },
+    });
+    m.addLayer({
+      id: "places-open", type: "circle", source: "places", minzoom: 13,
+      filter: ["all", ["==", ["get", "cls"], "place"], ["get", "open"]],
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 2.2, 16, 5],
+        "circle-color": ["get", "color"], "circle-stroke-color": c.hole, "circle-stroke-width": 0.8,
+      },
+    });
+    m.addLayer({
+      id: "places-cam", type: "circle", source: "places", minzoom: 15,
+      filter: ["==", ["get", "cls"], "cam"],
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, 2, 18, 4],
+        "circle-color": ["get", "color"], "circle-opacity": 0.85,
+      },
     });
     m.addLayer({
       id: "routes-casing", type: "line", source: "routes", filter: ["==", ["get", "selected"], true],
@@ -367,17 +396,17 @@ function addOverlays(m: MlMap, theme: Theme) {
       layout: { "line-cap": "butt", "line-join": "round" },
       paint: { "line-color": c.gap, "line-width": 5, "line-dasharray": [1, 1] },
     });
+    // Help points (police, hospitals) on top and visible early; everything else reveals with zoom.
     m.addLayer({
-      id: "places", type: "circle", source: "places", minzoom: 11,
+      id: "places-help", type: "circle", source: "places", minzoom: 10,
+      filter: ["==", ["get", "cls"], "help"],
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 15, 6],
-        "circle-color": ["case", ["get", "open"], ["get", "color"], c.hole],
-        "circle-stroke-color": ["get", "color"],
-        "circle-stroke-width": ["case", ["get", "open"], 0.5, 1.5],
-        "circle-opacity": ["case", ["get", "open"], 1, 0.8],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 4, 15, 7.5],
+        "circle-color": ["get", "color"],
+        "circle-stroke-color": c.hole, "circle-stroke-width": 2,
+        "circle-opacity": ["case", ["get", "open"], 1, 0.55],
       },
-    });
-}
+    });}
 
 /** Major bus routes, fetched once on first use and kept for later style swaps. */
 let busData: GeoJSON.FeatureCollection | null = null;
@@ -482,13 +511,13 @@ function draw(
         type: "Feature" as const,
         properties: {
           name: p.name, label: KIND_LABEL[p.kind] ?? p.kind, open: p.open, hours: p.hours, oh: p.oh ?? "",
-          color: kindColor[p.kind] ?? kindColor.atm,
+          color: kindColor[p.kind] ?? kindColor.atm, cls: p.kind === "hospital" || p.kind === "police" ? "help" : "place",
         },
         geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] },
       })),
       ...focus.flatMap((sel) => sel.cameras).map((c) => ({
         type: "Feature" as const,
-        properties: { name: "CCTV camera", label: "Camera", open: true, hours: "camera", oh: "", color: kindColor.camera },
+        properties: { name: "CCTV camera", label: "Camera", open: true, hours: "camera", oh: "", color: kindColor.camera, cls: "cam" },
         geometry: { type: "Point" as const, coordinates: c },
       })),
     ],

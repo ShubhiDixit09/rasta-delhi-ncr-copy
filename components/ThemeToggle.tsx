@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeMode, setThemeMode, useTheme } from "@/lib/theme";
+import { t } from "@/lib/i18n";
 
 const NEXT: Record<ThemeMode, ThemeMode> = { auto: "light", light: "dark", dark: "auto" };
 const LABEL: Record<ThemeMode, string> = { auto: "Auto", light: "Light", dark: "Dark" };
@@ -42,7 +43,7 @@ export default function ThemeToggle() {
       title={`Theme: ${LABEL[mode]}`}
     >
       <Icon mode={mode} />
-      {LABEL[mode]}
+      {mode === "dark" ? t("Dark mode") : t(LABEL[mode])}
     </button>
   );
 }
