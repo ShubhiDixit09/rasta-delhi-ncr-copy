@@ -342,10 +342,12 @@ function useWakeLock(on: boolean) {
   }, [on]);
 }
 
-export function TripPanel({ session, onPosition, onEnd }: {
+export function TripPanel({ session, onPosition, onEnd, feedback }: {
   session: TripSession;
   onPosition: (p: { lon: number; lat: number; acc: number } | null) => void;
   onEnd: () => void;
+  /** The two-tap route questions, shown under the trip (they have their own "Not now"). */
+  feedback?: React.ReactNode;
 }) {
   const { route } = session;
   const watcher = useMemo(
@@ -569,6 +571,7 @@ export function TripPanel({ session, onPosition, onEnd }: {
           Tell my people I reached
         </button>
         {sent && <p className="share-status">{sent}</p>}
+        {feedback}
         <button type="button" className="btn big" onClick={end}>End trip</button>
       </div>
     );
@@ -673,6 +676,7 @@ export function TripPanel({ session, onPosition, onEnd }: {
         Keep Ghar Tak open. If you switch apps for long, your phone pauses it and check-ins stop.
         {fix && fix.acc > 60 ? ` GPS is rough right now (±${Math.round(fix.acc)} m).` : ""}
       </p>
+      {feedback}
 
       <dialog ref={checkDialog} className={alarm ? "trip-check alarm" : "trip-check"} onCancel={(e) => e.preventDefault()}>
         {alarm ? (

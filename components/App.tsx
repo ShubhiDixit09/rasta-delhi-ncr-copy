@@ -565,11 +565,27 @@ export default function App() {
     </>
   ) : null;
 
+  // The two-tap route questions: under the route list, and again on the trip screens.
+  const feedbackFor = (selectedId: number) =>
+    result && from && to ? (
+      <Feedback
+        tripKey={`${result.mode}|${from.point.join(",")}|${to.point.join(",")}`}
+        mode={result.mode}
+        depart={result.depart}
+        from={from.point}
+        to={to.point}
+        routes={routes}
+        metro={metro}
+        teen={teen}
+        selectedId={selectedId}
+      />
+    ) : null;
+
   let body: React.ReactNode;
   if (session) {
     body = (
       <TripPanel
-        session={session} onPosition={setMe}
+        session={session} onPosition={setMe} feedback={feedbackFor(session.route.id)}
         onEnd={() => {
           setSession(null);
           setMe(null);
@@ -789,17 +805,7 @@ export default function App() {
           </p>
         )}
         <div className="actions inline"><Share text={shareFor(selected)} /></div>
-        <Feedback
-          tripKey={`${result.mode}|${from.point.join(",")}|${to.point.join(",")}`}
-          mode={result.mode}
-          depart={result.depart}
-          from={from.point}
-          to={to.point}
-          routes={routes}
-          metro={metro}
-          teen={teen}
-          selectedId={selected}
-        />
+        {feedbackFor(selected)}
         <p className="disclaimer">
           Ghar Tak compares routes using public data; it cannot see what is happening on a street tonight. Use it to
           weigh options, not as a guarantee. In an emergency call <a href="tel:112">112</a>.{" "}
