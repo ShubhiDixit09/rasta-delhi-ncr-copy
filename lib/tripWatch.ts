@@ -177,11 +177,11 @@ export class TripWatcher {
     return now + (this.remaining() / Math.max(0.3, pace)) * 1000;
   }
 
-  /** The most pressing check due now, or null. */
-  evaluate(now: number): Check | null {
+  /** The most pressing check due now, or null. `skip` turns kinds off (e.g. on a metro ride). */
+  evaluate(now: number, skip: CheckKind[] = []): Check | null {
     if (this.arrived) return null;
     const r = this.rules;
-    const ok = (k: CheckKind) => (this.snoozedUntil[k] ?? 0) <= now;
+    const ok = (k: CheckKind) => (this.snoozedUntil[k] ?? 0) <= now && !skip.includes(k);
     const good = this.fixes.filter((f) => f.acc <= 100);
     const last = good[good.length - 1];
     if (!last) return null;

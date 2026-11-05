@@ -108,8 +108,13 @@ export default function LiveView({ id }: { id: string }) {
   }, [trip, ready]);
 
   const who = trip?.name || "Your contact";
-  const lastSeen = trip?.pos?.at ?? trip?.updatedAt;
-  const stale = trip && lastSeen && (trip.status === "on_way" || trip.status === "check") && now - Date.parse(trip.updatedAt) > 180_000;
+  // One clock for both "Live" and "Last update": when the server last heard from the phone.
+  const lastSeen = trip?.updatedAt;
+  const active = trip && (trip.status === "on_way" || trip.status === "check");
+  const ageS = trip ? (now - Date.parse(trip.updatedAt)) / 1000 : 0;
+  // Live only while updates keep arriving (the phone sends one every ~25 s while Ghar Tak is open).
+  const live = active && ageS < 75;
+  const stale = active && ageS > 180;
   const progress = trip ? Math.min(1, trip.along / Math.max(1, trip.distance)) : 0;
 
   let banner: React.ReactNode = null;
@@ -144,7 +149,7 @@ export default function LiveView({ id }: { id: string }) {
         <img src="/icons/logo.svg" alt="" width={26} height={26} />
         <div>
           <b>{trip ? `${who} is ${trip.status === "arrived" ? "home" : trip.status === "ended" ? "off the trip" : "on the way"}` : "Live trip"}</b>
-          {trip && <span className="muted">{trip.mode === "walk" ? "Walking" : "By cab"} · {trip.from} → {trip.to}</span>}
+          {trip && <span className="muted">{trip.mode === "metro" ? "By metro" : trip.mode === "walk" ? "Walking" : "By cab"} · {trip.from} → {trip.to}</span>}
         </div>
       </header>
       <section className="live-card">
@@ -155,9 +160,13 @@ export default function LiveView({ id }: { id: string }) {
           <>
             <div className="trip-eta">
               <div><b>Arrives ~{clock(trip.eta)}</b><span className="muted"> · {fmtDistance(Math.max(0, trip.distance - trip.along))} left</span></div>
-              {lastSeen && <span className="muted">Updated {ago(lastSeen, now)}</span>}
+              {lastSeen && (
+                <span className={live ? "fresh live" : "fresh"}><i />{live ? "Live" : `Last update ${ago(lastSeen, now)}`}</span>
+              )}
             </div>
             <div className="trip-progress"><i style={{ width: `${progress * 100}%` }} /></div>
+            {trip.pos?.src === "estimate" && <p className="small muted">On the metro underground: position estimated from the timetable.</p>}
+            {trip.pos?.src === "network" && <p className="small muted">Approximate location (±{fmtDistance(trip.pos.acc)}): GPS is weak, using the phone network.</p>}
             <p className="muted small">
               <Icon name="info" size={13} /> Blue line: where they have been. Amber: the route they planned. Started {clock(trip.startedAt)}.
             </p>
@@ -167,6 +176,7 @@ export default function LiveView({ id }: { id: string }) {
           <summary>Emergency numbers</summary>
           <HelplineList />
         </details>
+        {trip && <p className="note">This page shows {trip.name || "your contact"}&apos;s location, sent from their phone. It never uses yours.</p>}
         <p className="note">Shared from Ghar Tak, night routes for Delhi NCR. This link stops working an hour after the trip ends.</p>
       </section>
     </div>

@@ -1,3 +1,10 @@
+@font-face {
+  font-family: Inter;
+  src: url(/fonts/Inter-latin.woff2) format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root,
 :root[data-theme="dark"] {
   --bg: #0e1116;
@@ -76,7 +83,8 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
 
@@ -2689,3 +2697,116 @@ dialog.trip-check .sos-call {
 .live-banner .sos-call {
   margin: 8px 0 0;
 }
+
+
+/* Premium polish ------------------------------------------------------- */
+
+h1, h2, h3, .rc-top strong, .trip-eta b { letter-spacing: -0.015em; }
+
+.btn, .rcard, .chip, .seg button, .icon-btn, .fab, .layer, .ob-opt, .persona-chip {
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:active, .rcard:active, .chip:active, .seg button:active, .fab:active, .ob-opt:active, .persona-chip:active {
+  transform: scale(0.97);
+}
+.rcard { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset; }
+.rcard.sel { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-fill) 14%, transparent); }
+:focus-visible { outline: 2px solid var(--accent-fill); outline-offset: 2px; }
+.sheet-body > .view { animation: view-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.plan, .sheet { border-color: color-mix(in srgb, var(--line) 70%, transparent); }
+.ring b { font-weight: 800; }
+
+/* Persona chip and tips */
+.persona-chip {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--raise);
+  font-size: 17px; line-height: 1; cursor: pointer; display: grid; place-items: center;
+}
+.persona-tip {
+  margin: 10px 0 4px; padding: 11px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45;
+  background: color-mix(in srgb, var(--accent-fill) 12%, var(--raise)); border: 1px solid color-mix(in srgb, var(--accent-fill) 35%, var(--line));
+}
+.shared-note {
+  display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; padding: 11px 13px; border-radius: 14px;
+  font-size: 13.5px; line-height: 1.45; background: rgba(110, 150, 255, 0.12); border: 1px solid rgba(110, 150, 255, 0.35);
+}
+.shared-note .icon { color: #7f9cff; margin-top: 2px; }
+.shared-note.warn { background: color-mix(in srgb, var(--accent-fill) 12%, var(--raise)); border-color: color-mix(in srgb, var(--accent-fill) 35%, var(--line)); }
+.shared-note.warn .icon { color: var(--accent); }
+
+/* Elders: bigger text and targets in the panels (not the map), fewer controls. */
+:root[data-persona="senior"] .sheet-body > *,
+:root[data-persona="senior"] .plan > * { zoom: 1.16; }
+:root[data-persona="senior"] .map-tools,
+:root[data-persona="senior"] details.how { display: none; }
+:root[data-persona="senior"] .sos { transform: scale(1.15); transform-origin: left top; }
+
+/* Trip: location source and metro ride */
+.loc-src { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+.loc-src i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.loc-src.network i { background: var(--accent-fill); }
+.loc-src.estimate i { background: #7f9cff; }
+.metro-live {
+  margin: 0 0 12px; padding: 12px 14px; border-radius: 16px; background: var(--raise);
+  border: 1px solid color-mix(in srgb, #7f9cff 35%, var(--line));
+}
+.metro-live > p { margin: 8px 0 0; }
+.ml-head { display: flex; align-items: center; justify-content: space-between; }
+.ml-stations { list-style: none; margin: 10px 0 8px; padding: 0 0 0 4px; display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.ml-stations li { display: flex; align-items: center; gap: 9px; }
+.ml-stations li i { width: 9px; height: 9px; border-radius: 50%; opacity: 0.45; }
+.ml-stations li.done { text-decoration: line-through; opacity: 0.6; }
+.ml-stations li.now { color: var(--text); font-weight: 700; }
+.ml-stations li.now i { opacity: 1; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent); }
+
+/* Live page freshness */
+.fresh { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 650; color: var(--accent); }
+.fresh i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); }
+.fresh.live { color: var(--good); }
+.fresh.live i { background: #ef4444; animation: blink 1.4s infinite; }
+
+/* Onboarding */
+.onboard {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(120% 80% at 50% 30%, color-mix(in srgb, var(--accent-fill) 18%, var(--bg)), var(--bg) 70%);
+  animation: ob-fade 0.3s ease;
+}
+@keyframes ob-fade { from { opacity: 0; } }
+.ob-splash { display: grid; justify-items: center; text-align: center; cursor: pointer; }
+.ob-road { width: 260px; height: 104px; margin-bottom: -40px; }
+.ob-road path {
+  fill: none; stroke: var(--accent-fill); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 420; stroke-dashoffset: 420;
+  animation: ob-draw 1.1s 0.1s cubic-bezier(0.6, 0, 0.2, 1) forwards; opacity: 0.8;
+}
+@keyframes ob-draw { to { stroke-dashoffset: 0; } }
+.ob-logo { border-radius: 22px; box-shadow: 0 18px 50px color-mix(in srgb, var(--accent-fill) 45%, transparent); animation: ob-pop 0.7s 0.6s both cubic-bezier(0.3, 1.5, 0.5, 1); }
+@keyframes ob-pop { from { opacity: 0; transform: scale(0.4) translateY(20px); } }
+.ob-name { margin: 18px 0 0; font-size: 40px; font-weight: 850; letter-spacing: -0.03em; animation: ob-up 0.5s 1s both; }
+.ob-deva { margin: 2px 0 0; font-size: 22px; font-weight: 700; color: var(--accent); animation: ob-up 0.5s 1.15s both; }
+.ob-tag { margin: 14px 0 0; color: var(--muted); animation: ob-up 0.5s 1.35s both; }
+@keyframes ob-up { from { opacity: 0; transform: translateY(12px); } }
+.ob-ask { width: min(440px, 100%); display: grid; justify-items: center; text-align: center; gap: 4px; animation: ob-up 0.35s both; }
+.ob-ask img { border-radius: 12px; margin-bottom: 8px; }
+.ob-ask h2 { margin: 0; font-size: 28px; font-weight: 850; letter-spacing: -0.025em; }
+.ob-ask > p { margin: 4px 0 0; }
+.ob-options { width: 100%; display: grid; gap: 10px; margin: 18px 0 10px; }
+.ob-opt {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; text-align: left; cursor: pointer;
+  background: var(--panel); border: 1.5px solid var(--line); color: var(--text); animation: ob-up 0.4s both;
+}
+.ob-opt:hover { border-color: var(--line-strong); }
+.ob-opt.on { border-color: var(--accent-fill); }
+.ob-emoji { font-size: 30px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: var(--raise); flex: none; }
+.ob-opt b { display: block; font-size: 17px; }
+.ob-opt small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 1px; }
+@media (prefers-reduced-motion: reduce) {
+  .onboard *, .sheet-body > .view { animation: none !important; }
+  .ob-road path { stroke-dashoffset: 0; }
+}
+
+/* Three travel modes need the full width; time and teen sit on the row below. */
+.plan-opts { flex-wrap: wrap; }
+.plan-opts .seg { flex-basis: 100%; }

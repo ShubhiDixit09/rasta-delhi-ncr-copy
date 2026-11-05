@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Hashed build assets never change: cache first.
-  if (url.origin === location.origin && (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/"))) {
+  if (url.origin === location.origin && (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/fonts/"))) {
     event.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         if (res.ok) caches.open(STATIC).then((c) => c.put(req, res.clone()));
