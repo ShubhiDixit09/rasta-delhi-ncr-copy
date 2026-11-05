@@ -1,4 +1,4 @@
-import { MetroOption, outsideServiceHours, planMetro } from "@/lib/metro";
+import { MetroOption, outsideServiceHours, planMetroOptions } from "@/lib/metro";
 import { scoreRoute } from "@/lib/score";
 import { parseTrip, routerError, tripCandidates } from "@/lib/trip";
 
@@ -25,11 +25,14 @@ export async function POST(req: Request) {
   // hours the option is dropped, and the reason is sent so the app can say why.
   let metro: MetroOption | null = null;
   let metroClosed: string | null = null;
+  let metroAlts: MetroOption[] = [];
   if (trip.mode === "walk") {
     const fastest = Math.min(...cands.map((c) => c.duration));
-    metro = await planMetro(ds, trip.from, trip.to, trip.depart, fastest, trip.teen).catch(() => null);
-    metroClosed = metro && outsideServiceHours(metro);
-    if (metroClosed) metro = null;
+    const options = await planMetroOptions(ds, trip.from, trip.to, trip.depart, fastest, trip.teen).catch(() => []);
+    const open = options.filter((o) => !outsideServiceHours(o));
+    metroClosed = options.length && !open.length ? outsideServiceHours(options[0]) : null;
+    metro = open[0] ?? null;
+    metroAlts = open.slice(1);
   }
 
   return Response.json({
@@ -38,6 +41,7 @@ export async function POST(req: Request) {
     depart: trip.depart.toISOString(),
     routes,
     metro,
+    metroAlts,
     metroClosed,
     timingMs: Math.round(performance.now() - t0),
   });

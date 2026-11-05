@@ -30,6 +30,8 @@ interface ApiResult {
   depart: string;
   routes: ScoredRoute[];
   metro: MetroOption | null;
+  /** Other walk + metro options: fewest changes, or changing somewhere else. */
+  metroAlts?: MetroOption[];
   /** Why there is no walk + metro option (the metro is not running then), if that is the reason. */
   metroClosed?: string | null;
 }
@@ -198,6 +200,8 @@ export default function App() {
   const [sharedView, setSharedView] = useState(false);
   const [persona, setPersonaState] = useState<Persona | null | undefined>(undefined);
   const [askPersona, setAskPersona] = useState(false);
+  // The intro plays on every launch, except for shared links and the SOS shortcut.
+  const [intro, setIntro] = useState(false);
   const metroRef = useRef(false);
   useEffect(() => {
     if (persona !== undefined) document.documentElement.dataset.persona = persona ?? "";
@@ -264,7 +268,9 @@ export default function App() {
     const p = loadPersona();
     setPersonaState(p);
     // First visit: ask who is using Ghar Tak. Never in front of a shared link or the SOS shortcut.
-    if (!p && !u.from && !u.to && !window.location.search.includes("sos=1")) setAskPersona(true);
+    const plainLaunch = !u.from && !u.to && !window.location.search.includes("sos=1");
+    if (plainLaunch) setIntro(true);
+    if (!p && plainLaunch) setAskPersona(true);
     if (u.depart) {
       setPreset("custom");
       setCustom(istInputValue(u.depart));
@@ -326,7 +332,8 @@ export default function App() {
         const best = [...body.routes].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0];
         const want = wantRoute.current;
         wantRoute.current = null;
-        const valid = want !== null && (body.routes.some((r) => r.id === want) || body.metro?.id === want);
+        const valid = want !== null && (body.routes.some((r) => r.id === want) || body.metro?.id === want ||
+          (body.metroAlts ?? []).some((m) => m.id === want));
         setSelected(valid ? want : metroRef.current && body.metro ? body.metro.id : (best?.id ?? 0));
         // A shared link opens straight on its route; a new search shows the list to compare.
         setDetail(valid);
@@ -437,7 +444,9 @@ export default function App() {
   const bestScore = routes.length ? Math.max(...routes.map((r) => r.score ?? -1)) : 0;
   const metro = result?.metro ?? null;
   const selRoute = routes.find((r) => r.id === selected) ?? null;
-  const selMetro = metro && metro.id === selected ? metro : null;
+  const metros = metro ? [metro, ...(result?.metroAlts ?? [])] : [];
+  const selMetro = metros.find((m) => m.id === selected) ?? null;
+  const fewestChanges = metros.length > 1 ? Math.min(...metros.map((m) => m.ride.segments.length)) : -1;
   const timeLabel =
     preset === "now" ? "Now" : preset === "custom" ? shortTime(`${custom}:00+05:30`) : PRESETS.find((p) => p.id === preset)!.label;
   const scoreName = teen ? "teen score" : "night score";
@@ -488,10 +497,11 @@ export default function App() {
         url: tripUrl(from, to, result.mode, result.depart, r.id, teen, true),
       });
     }
-    return metro
+    const m = metros.find((x) => x.id === id) ?? metro;
+    return m
       ? metroShareText({
-          metro, fromLabel: from.label, toLabel: to.label, depart: result.depart,
-          url: tripUrl(from, to, "metro", result.depart, metro.id, teen, true),
+          metro: m, fromLabel: from.label, toLabel: to.label, depart: result.depart,
+          url: tripUrl(from, to, "metro", result.depart, m.id, teen, true),
         })
       : "";
   };
@@ -523,22 +533,36 @@ export default function App() {
     </p>
   );
 
-  const metroCard = metro ? (
-    <li>
-                <button type="button" className={selected === metro.id ? "rcard sel" : "rcard"} onClick={() => openRoute(metro.id)}>
-                  <Ring score={metro.score} label="walk parts" />
-                  <span className="rc-main">
-                    <span className="rc-top"><strong>~{fmtDuration(metro.duration)}</strong><span className="muted">walk + metro</span></span>
-                    <span className="rc-why lines">
-                      {metro.ride.segments.map((sg, i) => (
-                        <span key={i} className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span>
-                      ))}
-                    </span>
-                    {metro.duration < fastest && <span className="tags"><span className="tag blue">Faster than walking</span></span>}
-                  </span>
-                  <Icon name="right" className="chev" />
-                </button>
-              </li>
+  const metroCard = metros.length ? (
+    <>
+      {metros.map((m, i) => {
+        const changes = m.ride.segments.length - 1;
+        const label = i === 0 ? "Fastest by metro" : m.ride.segments.length === fewestChanges ? "Fewest changes" : `Change at ${m.ride.segments[1]?.from ?? ""}`;
+        return (
+          <li key={m.id}>
+            <button type="button" className={selected === m.id ? "rcard sel" : "rcard"} onClick={() => openRoute(m.id)}>
+              <Ring score={m.score} label="walk parts" />
+              <span className="rc-main">
+                <span className="rc-top">
+                  <strong>~{fmtDuration(m.duration)}</strong>
+                  <span className="muted">{changes === 0 ? "direct" : `${changes} change${changes > 1 ? "s" : ""}`}</span>
+                </span>
+                <span className="rc-why lines">
+                  {m.ride.segments.map((sg, k) => (
+                    <span key={k} className="line-chip"><i style={{ background: sg.colour }} />{sg.line.replace(/ Line$/, "")}</span>
+                  ))}
+                </span>
+                <span className="tags">
+                  <span className={i === 0 ? "tag blue" : "tag"}>{label}</span>
+                  {i === 0 && m.duration < fastest && <span className="tag good">Faster than walking</span>}
+                </span>
+              </span>
+              <Icon name="right" className="chev" />
+            </button>
+          </li>
+        );
+      })}
+    </>
   ) : null;
 
   let body: React.ReactNode;
@@ -685,7 +709,10 @@ export default function App() {
           <Ring score={selMetro.score} label="walk parts" />
           <div className="detail-title">
             <h2>~{fmtDuration(selMetro.duration)} · walk + metro</h2>
-            <p className="muted">{fmtDistance(selMetro.walkDistance)} on foot · {selMetro.board.station} → {selMetro.alight.station}</p>
+            <p className="muted">
+              {selMetro.ride.segments.length === 1 ? "Direct" : `${selMetro.ride.segments.length - 1} change${selMetro.ride.segments.length > 2 ? "s" : ""} at ${selMetro.ride.segments.slice(1).map((sg) => sg.from.replace(/\s*\(.*\)$/, "")).join(", ")}`}
+              {" · "}{fmtDistance(selMetro.walkDistance)} on foot
+            </p>
           </div>
         </div>
         <div className="tab-body">
@@ -713,7 +740,7 @@ export default function App() {
           </div>
         )}
         <div className="list-head">
-          <h2>{routes.length + (metro ? 1 : 0) === 1 ? "1 way home" : `${routes.length + (metro ? 1 : 0)} ways home`}</h2>
+          <h2>{routes.length + metros.length === 1 ? "1 way home" : `${routes.length + metros.length} ways home`}</h2>
           <span className="muted">scored for {fmtIst(result.depart)}</span>
         </div>
         {metroMode && !metro && (
@@ -794,7 +821,7 @@ export default function App() {
           from={from?.point ?? null}
           to={to?.point ?? null}
           routes={session ? [session.route] : routes}
-          metro={session ? null : metro}
+          metro={session ? null : (selMetro ?? metro)}
           theme={theme}
           hidden={hidden}
           showBuses={showBuses}
@@ -1028,7 +1055,16 @@ export default function App() {
         )}
       </div>
       <SosButton />
-      {askPersona && <Onboarding splash={!persona} current={persona ?? null} onPick={pickPersona} />}
+      {(askPersona || intro) && (
+        <Onboarding
+          splash={intro} ask={askPersona} current={persona ?? null}
+          onPick={(p) => {
+            pickPersona(p);
+            setIntro(false);
+          }}
+          onDone={() => setIntro(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1146,23 +1182,38 @@ function MetroBreakdown({ m }: { m: MetroOption }) {
           with {operators.join(" / ") || "the operator"} before you rely on this.
         </div>
       )}
-      <ol className="steps">
-        <li>
-          <b>Walk {fmtDistance(leg1.distance)}</b> to {m.board.station} station
-          <span className="muted"> · night score {leg1.score ?? "–"}</span>
-          <div className="muted">{summary(leg1).slice(0, 2).join(" · ")}</div>
+      <ol className="journey">
+        <li className="walk">
+          <span className="j-dot" />
+          <div><b>Walk {fmtDistance(leg1.distance)}</b> to <b>{m.board.station}</b> station
+            <div className="muted small">{fmtDuration(leg1.duration)} · night score {leg1.score ?? "–"} · {summary(leg1)[0]}</div></div>
         </li>
         {m.ride.segments.map((sg, i) => (
-          <li key={i}>
-            {i > 0 && <span className="muted">Change to </span>}
-            <span className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span> {sg.from} → {sg.to}
-            <span className="muted"> · {sg.stops} stop{sg.stops === 1 ? "" : "s"}</span>
+          <li key={i} className="ride" style={{ "--lc": sg.colour } as React.CSSProperties}>
+            <span className="j-dot" />
+            <div>
+              {i > 0 && <div className="j-change"><Icon name="swap" size={14} />Change at <b>{sg.from}</b></div>}
+              <div><span className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span> towards <b>{sg.towards}</b></div>
+              <div className="muted small">
+                Board at {sg.from} · {sg.stops} stop{sg.stops === 1 ? "" : "s"} · get off at <b>{sg.to}</b>
+              </div>
+              {sg.stations.length > 2 && (
+                <details className="j-stops">
+                  <summary>{sg.stations.length - 2} stops in between</summary>
+                  <ol>{sg.stations.slice(1, -1).map((st) => <li key={st.name}>{st.name}</li>)}</ol>
+                </details>
+              )}
+            </div>
           </li>
         ))}
-        <li>
-          <b>Walk {fmtDistance(leg2.distance)}</b> from {m.alight.station} station, around {clock(m.alight.at)}
-          <span className="muted"> · night score {leg2.score ?? "–"}</span>
-          <div className="muted">{summary(leg2).slice(0, 2).join(" · ")}</div>
+        <li className="walk">
+          <span className="j-dot" />
+          <div><b>Walk {fmtDistance(leg2.distance)}</b> from {m.alight.station} station, around {clock(m.alight.at)}
+            <div className="muted small">{fmtDuration(leg2.duration)} · night score {leg2.score ?? "–"} · {summary(leg2)[0]}</div></div>
+        </li>
+        <li className="end">
+          <span className="j-dot" />
+          <div><b>Arrive around {clock(m.alight.arrive)}</b></div>
         </li>
       </ol>
       <p className="note">

@@ -42,6 +42,10 @@ export interface MetroPlan {
   waitS: number;
   /** Each station: distance along the whole route, and seconds after the train leaves. */
   stations: { name: string; along: number; t: number; line: string; colour: string }[];
+  /** Where to change trains, which line to take next and in which direction. */
+  changes?: { station: string; line: string; colour: string; towards: string }[];
+  /** Direction of the first train. */
+  towards?: string;
 }
 
 type Src = "gps" | "network" | "estimate";
@@ -86,6 +90,8 @@ export function metroTrip(m: MetroOption): { route: ScoredRoute; metro: MetroPla
     metro: {
       line: m.ride.segments[0]?.line ?? "Metro", colour: m.ride.segments[0]?.colour ?? "#888",
       boardAlong, alightAlong, walkS: Math.round(l1.duration), waitS: m.assumptions.waitMin * 60, stations,
+      towards: m.ride.segments[0]?.towards,
+      changes: m.ride.segments.slice(1).map((sg) => ({ station: sg.from, line: sg.line, colour: sg.colour, towards: sg.towards })),
     },
   };
 }
@@ -597,9 +603,21 @@ export function TripPanel({ session, onPosition, onEnd }: {
       {plan && ride && (
         <div className="metro-live">
           <div className="ml-head">
-            <span className="line-chip"><i style={{ background: plan.colour }} />{plan.line}</span>
+            {(() => {
+              const cur = plan.stations[Math.max(0, ride.index - 1)] ?? plan.stations[0];
+              return <span className="line-chip"><i style={{ background: cur.colour }} />{cur.line}</span>;
+            })()}
             <span className="muted">On the metro</span>
           </div>
+          {(() => {
+            const ch = ride.next && plan.changes?.find((c) => ride.next!.name.startsWith(c.station.replace(/\s*\(.*\)$/, "")));
+            return ch ? (
+              <div className="ml-change">
+                <Icon name="swap" size={16} />
+                <span>Change at <b>{ride.next!.name}</b> for the <b>{ch.line}</b> towards {ch.towards}</span>
+              </div>
+            ) : null;
+          })()}
           {ride.next ? (
             <p><b>Next: {ride.next.name}</b> · ~{Math.max(1, Math.round(ride.nextInS / 60))} min</p>
           ) : (
@@ -618,7 +636,11 @@ export function TripPanel({ session, onPosition, onEnd }: {
       {plan && !ride && boardedAt.current === null && (
         <div className="ahead info">
           <Icon name="train" size={16} />
-          <span>Walk to <b>{plan.stations[0]?.name}</b>, then {plan.line} to <b>{plan.stations[plan.stations.length - 1]?.name}</b>.</span>
+          <span>
+            Walk to <b>{plan.stations[0]?.name}</b>, take the {plan.line}{plan.towards ? ` towards ${plan.towards}` : ""}
+            {plan.changes?.map((c) => <> , change at <b>{c.station}</b> for the {c.line}{c.towards ? ` towards ${c.towards}` : ""}</>)}
+            , get off at <b>{plan.stations[plan.stations.length - 1]?.name}</b>.
+          </span>
         </div>
       )}
 
