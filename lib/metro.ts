@@ -182,6 +182,8 @@ export interface RideSegment {
   to: string;
   stops: number;
   coords: LngLat[];
+  /** The line's terminal in the direction of travel: "towards Noida Electronic City". */
+  towards: string;
   /** Every station on this ride, in order, with the estimated seconds after boarding the train. */
   stations: { name: string; at: LngLat; t: number }[];
 }
@@ -235,138 +237,178 @@ async function stationWalk(place: LngLat, station: LngLat, dir: "to" | "from"): 
 }
 
 /**
- * Best estimated walk + metro + walk trip, or null when there is no station within walking range
- * at both ends or the metro would not beat walking.
+ * Up to three walk + metro + walk options, fastest first: the quickest ride, the one with fewest line
+ * changes, and one that changes somewhere else. Each must beat walking, and the alternatives must be
+ * within 25 minutes of the fastest. Empty when there is no station within walking range at both ends.
  */
-export async function planMetro(
+export async function planMetroOptions(
   ds: Dataset, from: LngLat, to: LngLat, depart: Date, fastestWalkS: number, teen = false,
-): Promise<MetroOption | null> {
+): Promise<MetroOption[]> {
   const g = buildGraph(ds);
   const istH = ((depart.getTime() / 3_600_000 + 5.5) % 24 + 24) % 24;
   const waitMin = istH >= 7 && istH < 22 ? ASSUMPTIONS.waitDayMin : ASSUMPTIONS.waitNightMin;
   const waitS = waitMin * 60;
-  if (flatDist(from[0], from[1], to[0], to[1]) < 1500) return null;
+  if (flatDist(from[0], from[1], to[0], to[1]) < 1500) return [];
   const access = nearStations(g, from);
   const egress = nearStations(g, to);
-  if (!access.length || !egress.length) return null;
+  if (!access.length || !egress.length) return [];
 
-  // Dijkstra from all access stations at once; each starts with its estimated walk + a wait.
-  const n = g.nodes.length;
-  const cost = new Float64Array(n).fill(Infinity);
-  const prev = new Int32Array(n).fill(-1);
-  const origin = new Int32Array(n).fill(-1);
-  const done = new Uint8Array(n);
-  access.forEach((st, ai) => {
-    for (const v of st.nodes) {
-      const c = estWalk(st.d) + waitS;
-      if (c < cost[v]) {
-        cost[v] = c;
-        origin[v] = ai;
+  /** Dijkstra from all access stations at once; extraChangeS penalises changes, banned names can't be changed at. */
+  const search = (extraChangeS: number, banned: Set<string>) => {
+    const n = g.nodes.length;
+    const cost = new Float64Array(n).fill(Infinity);
+    const prev = new Int32Array(n).fill(-1);
+    const done = new Uint8Array(n);
+    for (const st of access) for (const v of st.nodes) cost[v] = Math.min(cost[v], estWalk(st.d) + waitS);
+    for (;;) {
+      let u = -1;
+      for (let i = 0; i < n; i++) if (!done[i] && cost[i] < Infinity && (u < 0 || cost[i] < cost[u])) u = i;
+      if (u < 0) break;
+      done[u] = 1;
+      for (const [v, w, kind] of g.adj[u]) {
+        if (kind === 1 && banned.has(g.nodes[u].name)) continue;
+        const step = w + transferS(kind, waitS) + (kind === 1 ? extraChangeS : 0);
+        if (cost[u] + step < cost[v]) {
+          cost[v] = cost[u] + step;
+          prev[v] = u;
+        }
       }
     }
-  });
-  for (;;) {
-    let u = -1;
-    for (let i = 0; i < n; i++) if (!done[i] && cost[i] < Infinity && (u < 0 || cost[i] < cost[u])) u = i;
-    if (u < 0) break;
-    done[u] = 1;
-    for (const [v, w, kind] of g.adj[u]) {
-      const step = w + transferS(kind, waitS);
-      if (cost[u] + step < cost[v]) {
-        cost[v] = cost[u] + step;
-        prev[v] = u;
-        origin[v] = origin[u];
+    let best = -1, bestTotal = Infinity;
+    for (const st of egress) {
+      for (const v of st.nodes) {
+        const total = cost[v] + estWalk(st.d);
+        if (total < bestTotal) {
+          bestTotal = total;
+          best = v;
+        }
       }
     }
+    if (best < 0) return null;
+    const path: number[] = [];
+    for (let v = best; v >= 0; v = prev[v]) path.unshift(v);
+    return path;
+  };
+
+  const changesOf = (path: number[]) => {
+    const out: string[] = [];
+    for (let i = 1; i < path.length; i++) {
+      const e = g.adj[path[i - 1]].find(([v]) => v === path[i]);
+      if (e && e[2] === 1) out.push(g.nodes[path[i - 1]].name);
+    }
+    return out;
+  };
+  const signature = (path: number[]) =>
+    [g.nodes[path[0]].name, ...path.map((v) => family(ds.metro.lines[g.nodes[v].line].name)).filter((f, i, a) => f !== a[i - 1]),
+      g.nodes[path[path.length - 1]].name].join("|");
+
+  const first = search(0, new Set());
+  if (!first) return [];
+  const paths = [first];
+  const fewest = search(15 * 60, new Set());
+  const elsewhere = changesOf(first).length ? search(0, new Set(changesOf(first))) : null;
+  for (const p of [fewest, elsewhere]) {
+    if (p && !paths.some((q) => signature(q) === signature(p))) paths.push(p);
   }
-  let best = -1, bestTotal = Infinity;
-  for (const st of egress) {
-    for (const v of st.nodes) {
-      const total = cost[v] + estWalk(st.d);
-      if (total < bestTotal) {
-        bestTotal = total;
-        best = v;
+
+  // Walking legs are shared between options that use the same stations.
+  const walks = new Map<string, Promise<Candidate | null>>();
+  const walk = (place: LngLat, nd: Node, dir: "to" | "from") => {
+    const key = `${dir}|${nd.name}`;
+    if (!walks.has(key)) walks.set(key, stationWalk(place, [nd.lon, nd.lat], dir));
+    return walks.get(key)!;
+  };
+
+  const built = await Promise.all(paths.map((path, idx) => buildOption(path, METRO_OPTION_ID + idx * 10)));
+  const options = built.filter((o): o is MetroOption => o !== null).sort((a, b) => a.duration - b.duration);
+  if (!options.length || !(options[0].duration < fastestWalkS * 0.9)) return [];
+  const fastest = options[0].duration;
+  return options
+    .filter((o, i) => i === 0 || o.duration <= fastest + 25 * 60)
+    .map((o, i) => {
+      const id = METRO_OPTION_ID + i * 10;
+      return { ...o, id, legs: [{ ...o.legs[0], id: id + 1 }, { ...o.legs[1], id: id + 2 }] as [ScoredRoute, ScoredRoute] };
+    });
+
+  async function buildOption(path: number[], id: number): Promise<MetroOption | null> {
+    const boardNode = g.nodes[path[0]];
+    const alightNode = g.nodes[path[path.length - 1]];
+    if (boardNode.name.toLowerCase() === alightNode.name.toLowerCase()) return null;
+    const [leg1, leg2] = await Promise.all([walk(from, boardNode, "to"), walk(to, alightNode, "from")]);
+    if (!leg1 || !leg2) return null;
+    const segments: RideSegment[] = [];
+    let rideS = 0;
+    for (let i = 0; i < path.length; i++) {
+      const nd = g.nodes[path[i]];
+      let kind: 0 | 1 | 2 = 0;
+      if (i > 0) {
+        const edge = g.adj[path[i - 1]].find(([v]) => v === path[i]);
+        if (edge) {
+          rideS += edge[1] + transferS(edge[2], waitS);
+          kind = edge[2];
+        }
       }
-    }
-  }
-  if (best < 0 || !(bestTotal < fastestWalkS * 0.9)) return null;
-
-  // Reconstruct the ride, then fetch the real walking legs from the foot router.
-  const path: number[] = [];
-  for (let v = best; v >= 0; v = prev[v]) path.unshift(v);
-  const boardNode = g.nodes[path[0]];
-  const alightNode = g.nodes[path[path.length - 1]];
-  if (boardNode.name.toLowerCase() === alightNode.name.toLowerCase()) return null;
-
-  const [leg1, leg2] = await Promise.all([
-    stationWalk(from, [boardNode.lon, boardNode.lat], "to"),
-    stationWalk(to, [alightNode.lon, alightNode.lat], "from"),
-  ]);
-  if (!leg1 || !leg2) return null;
-
-  const segments: RideSegment[] = [];
-  let rideS = 0;
-  for (let i = 0; i < path.length; i++) {
-    const nd = g.nodes[path[i]];
-    let kind: 0 | 1 | 2 = 0;
-    if (i > 0) {
-      const edge = g.adj[path[i - 1]].find(([v]) => v === path[i]);
-      if (edge) {
-        rideS += edge[1] + transferS(edge[2], waitS);
-        kind = edge[2];
-      }
-    }
-    const line: MetroLine = ds.metro.lines[nd.line];
-    const last = segments[segments.length - 1];
-    const station = { name: nd.name, at: [nd.lon, nd.lat] as LngLat, t: Math.round(rideS) };
-    if (kind === 2 && last) {
-      // Same line, other branch: carry on in the same segment; the interchange node repeats the station.
-      if (last.stations[last.stations.length - 1].name !== nd.name) {
+      const line: MetroLine = ds.metro.lines[nd.line];
+      const last = segments[segments.length - 1];
+      const station = { name: nd.name, at: [nd.lon, nd.lat] as LngLat, t: Math.round(rideS) };
+      if (kind === 2 && last) {
+        // Same line, other branch: carry on in the same segment; the interchange node repeats the station.
+        last.towards = line.stops[line.stops.length - 1].name;
+        if (last.stations[last.stations.length - 1].name !== nd.name) {
+          last.to = nd.name;
+          last.stops++;
+          last.coords.push([nd.lon, nd.lat]);
+          last.stations.push(station);
+        }
+      } else if (!last || i === 0 || kind === 1) {
+        segments.push({
+          line: line.name.replace(/\s*\(.*\)$/, "").replace(/:.*$/, ""), ref: line.ref, colour: line.colour,
+          operator: line.operator, from: nd.name, to: nd.name, stops: 0, coords: [[nd.lon, nd.lat]], stations: [station],
+          towards: line.stops[line.stops.length - 1].name,
+        });
+      } else {
         last.to = nd.name;
         last.stops++;
         last.coords.push([nd.lon, nd.lat]);
         last.stations.push(station);
       }
-    } else if (!last || i === 0 || kind === 1) {
-      segments.push({
-        line: line.name.replace(/\s*\(.*\)$/, "").replace(/:.*$/, ""), ref: line.ref, colour: line.colour,
-        operator: line.operator, from: nd.name, to: nd.name, stops: 0, coords: [[nd.lon, nd.lat]], stations: [station],
-      });
-    } else {
-      last.to = nd.name;
-      last.stops++;
-      last.coords.push([nd.lon, nd.lat]);
-      last.stations.push(station);
     }
+    const rideSegments = segments.filter((s) => s.stops > 0);
+    rideS += waitS;
+
+    const boardAt = new Date(depart.getTime() + leg1.duration * 1000);
+    const alightAt = new Date(boardAt.getTime() + rideS * 1000);
+    const arrive = new Date(alightAt.getTime() + leg2.duration * 1000);
+    const s1 = scoreRoute(ds, leg1, "walk", depart, id + 1, teen);
+    const s2 = scoreRoute(ds, leg2, "walk", alightAt, id + 2, teen);
+    const walked = leg1.distance + leg2.distance;
+    const score =
+      s1.score === null || s2.score === null
+        ? null
+        : Math.round((s1.score * leg1.distance + s2.score * leg2.distance) / Math.max(1, walked));
+
+    return {
+      id,
+      score,
+      duration: Math.round((arrive.getTime() - depart.getTime()) / 1000),
+      walkDistance: Math.round(walked),
+      legs: [s1, s2],
+      ride: { segments: rideSegments, seconds: Math.round(rideS) },
+      board: { station: boardNode.name, at: boardAt.toISOString() },
+      alight: { station: alightNode.name, at: alightAt.toISOString(), arrive: arrive.toISOString() },
+      assumptions: {
+        ...ASSUMPTIONS,
+        waitMin,
+        speedKmh: ds.metro.speedKmh ?? FALLBACK_SPEED_KMH,
+        speedSource: ds.metro.speedSource,
+      },
+    };
   }
-  const rideSegments = segments.filter((s) => s.stops > 0);
-  rideS += waitS;
+}
 
-  const boardAt = new Date(depart.getTime() + leg1.duration * 1000);
-  const alightAt = new Date(boardAt.getTime() + rideS * 1000);
-  const arrive = new Date(alightAt.getTime() + leg2.duration * 1000);
-  const s1 = scoreRoute(ds, leg1, "walk", depart, METRO_OPTION_ID + 1, teen);
-  const s2 = scoreRoute(ds, leg2, "walk", alightAt, METRO_OPTION_ID + 2, teen);
-  const walked = leg1.distance + leg2.distance;
-  const score =
-    s1.score === null || s2.score === null
-      ? null
-      : Math.round((s1.score * leg1.distance + s2.score * leg2.distance) / Math.max(1, walked));
-
-  return {
-    id: METRO_OPTION_ID,
-    score,
-    duration: Math.round((arrive.getTime() - depart.getTime()) / 1000),
-    walkDistance: Math.round(walked),
-    legs: [s1, s2],
-    ride: { segments: rideSegments, seconds: Math.round(rideS) },
-    board: { station: boardNode.name, at: boardAt.toISOString() },
-    alight: { station: alightNode.name, at: alightAt.toISOString(), arrive: arrive.toISOString() },
-    assumptions: {
-      ...ASSUMPTIONS,
-      waitMin,
-      speedKmh: ds.metro.speedKmh ?? FALLBACK_SPEED_KMH,
-      speedSource: ds.metro.speedSource,
-    },
-  };
+/** The fastest walk + metro option, or null. */
+export async function planMetro(
+  ds: Dataset, from: LngLat, to: LngLat, depart: Date, fastestWalkS: number, teen = false,
+): Promise<MetroOption | null> {
+  return (await planMetroOptions(ds, from, to, depart, fastestWalkS, teen))[0] ?? null;
 }

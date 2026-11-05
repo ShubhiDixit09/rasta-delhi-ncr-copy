@@ -34,22 +34,37 @@ export function savePersona(p: Persona) {
   }
 }
 
-export default function Onboarding({ splash, current, onPick }: {
+/**
+ * splash: play the intro first. ask: then ask who is using Ghar Tak (otherwise the intro just closes,
+ * via onDone, and the app shows underneath). Tapping the intro skips it.
+ */
+export default function Onboarding({ splash, ask, current, onPick, onDone }: {
   splash: boolean;
+  ask: boolean;
   current: Persona | null;
   onPick: (p: Persona) => void;
+  onDone: () => void;
 }) {
-  const [stage, setStage] = useState<"splash" | "ask">(splash ? "splash" : "ask");
+  const [stage, setStage] = useState<"splash" | "ask" | "out">(splash ? "splash" : "ask");
+  const next = () => {
+    if (ask) setStage("ask");
+    else {
+      setStage("out");
+      setTimeout(onDone, 280);
+    }
+  };
   useEffect(() => {
     if (stage !== "splash") return;
-    const t = setTimeout(() => setStage("ask"), 2100);
+    // The full intro the first time; a quicker one on later visits.
+    const t = setTimeout(next, ask ? 2100 : 1900);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   return (
-    <div className={`onboard ${stage}`} role="dialog" aria-modal="true" aria-label="Welcome to Ghar Tak">
-      {stage === "splash" ? (
-        <div className="ob-splash" onClick={() => setStage("ask")}>
+    <div className={`onboard ${stage}`} role={stage === "ask" ? "dialog" : undefined} aria-hidden={stage !== "ask" ? true : undefined} aria-modal={stage === "ask" ? true : undefined} aria-label="Welcome to Ghar Tak">
+      {stage === "splash" || stage === "out" ? (
+        <div className="ob-splash" onClick={next}>
           <svg className="ob-road" viewBox="0 0 300 120" aria-hidden>
             <path d="M10 100 C 80 100, 90 30, 160 40 S 250 90, 290 20" />
           </svg>
