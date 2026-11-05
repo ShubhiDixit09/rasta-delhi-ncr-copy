@@ -1,6 +1,6 @@
 import { Dataset, MetroLine } from "./data";
-import { LngLat, flatDist } from "./geo";
-import { singleRoute } from "./routing";
+import { LngLat, M_PER_DEG_LAT, M_PER_DEG_LON, flatDist } from "./geo";
+import { Candidate, singleRoute } from "./routing";
 import { ScoredRoute, scoreRoute } from "./score";
 
 /**
@@ -12,7 +12,10 @@ import { ScoredRoute, scoreRoute } from "./score";
  * data build), plus fixed allowances for waiting and changing lines. The app labels them as such.
  */
 export const ASSUMPTIONS = {
-  /** Waiting for a train each time you board. Night headways are longer than daytime ones. */
+  /** Waiting for a train each time you board, by day (7 am-10 pm) and late at night. */
+  waitDayMin: 5,
+  waitNightMin: 8,
+  /** Waiting for a train each time you board, for this trip (set per trip from the two above). */
   waitMin: 8,
   /** Changing lines inside an interchange, on top of the walk between the two stops. */
   changeMin: 3,
@@ -102,11 +105,18 @@ interface Node {
 interface Graph {
   nodes: Node[];
   /** adjacency: [to, seconds, kind] with kind 0 = ride, 1 = change */
-  adj: [number, number, 0 | 1][][];
+  /** [to, seconds, kind]: 0 ride, 1 change of line (+ change time and a wait), 2 same line's branch. */
+  adj: [number, number, 0 | 1 | 2][][];
   speedMps: number;
 }
 
 let graph: Graph | null = null;
+
+/** "Green Line (Kirti Nagar => Ashok Park Main)" -> "green line". */
+const family = (name: string) => name.replace(/\s*\(.*\)$/, "").replace(/:.*$/, "").trim().toLowerCase();
+
+/** Seconds a transfer edge really costs on this trip. */
+const transferS = (kind: 0 | 1 | 2, waitS: number) => (kind === 1 ? ASSUMPTIONS.changeMin * 60 + waitS : kind === 2 ? 60 : 0);
 
 function buildGraph(ds: Dataset): Graph {
   if (graph) return graph;
@@ -131,7 +141,9 @@ function buildGraph(ds: Dataset): Graph {
       if (nodes[a].line === nodes[b].line) continue;
       const d = flatDist(nodes[a].lon, nodes[a].lat, nodes[b].lon, nodes[b].lat);
       if (d <= ASSUMPTIONS.interchangeM) {
-        adj[a].push([b, d / ASSUMPTIONS.walkMps + (ASSUMPTIONS.changeMin + ASSUMPTIONS.waitMin) * 60, 1]);
+        // Branches and directions of one line (OSM maps the Green Line as several routes) are the same
+        // trains: crossing between them is not a real change of line.
+        adj[a].push([b, d / ASSUMPTIONS.walkMps, family(ds.metro.lines[nodes[a].line].name) === family(ds.metro.lines[nodes[b].line].name) ? 2 : 1]);
       }
     }
   }
@@ -189,6 +201,40 @@ export interface MetroOption {
 export const METRO_OPTION_ID = 100;
 
 /**
+ * The walk between a place and a station. A station's mapped point often sits over a road or rail
+ * line that people can't walk on (Mundka is above Rohtak Road), and the foot router then snaps it to
+ * the wrong side and invents a detour: 8 km to reach a station 230 m away. When the walk is far longer
+ * than the distance, try points around the station and keep the shortest walk that ends near it.
+ */
+async function stationWalk(place: LngLat, station: LngLat, dir: "to" | "from"): Promise<Candidate | null> {
+  const route = (p: LngLat) => (dir === "to" ? singleRoute("walk", place, p) : singleRoute("walk", p, place));
+  const straight = flatDist(place[0], place[1], station[0], station[1]);
+  const direct = await route(station).catch(() => null);
+  if (direct && direct.distance <= straight * 1.8 + 400) return direct;
+  // Gentle on the shared router: four points at a time, nearest ring first, stop at the first good walk.
+  const good = (c: Candidate) => c.distance <= straight * 1.8 + 400;
+  let best = direct;
+  for (const r of [70, 150]) {
+    const ring: LngLat[] = [];
+    for (let k = 0; k < 8; k++) {
+      const a = (k * Math.PI) / 4;
+      ring.push([station[0] + (r * Math.sin(a)) / M_PER_DEG_LON, station[1] + (r * Math.cos(a)) / M_PER_DEG_LAT]);
+    }
+    for (let k = 0; k < ring.length; k += 4) {
+      const tries = await Promise.allSettled(ring.slice(k, k + 4).map(route));
+      for (const t of tries) {
+        if (t.status !== "fulfilled" || !t.value) continue;
+        const end = dir === "to" ? t.value.coords[t.value.coords.length - 1] : t.value.coords[0];
+        if (flatDist(end[0], end[1], station[0], station[1]) > 220) continue;
+        if (!best || t.value.duration < best.duration) best = t.value;
+      }
+      if (best && good(best)) return best;
+    }
+  }
+  return best;
+}
+
+/**
  * Best estimated walk + metro + walk trip, or null when there is no station within walking range
  * at both ends or the metro would not beat walking.
  */
@@ -196,6 +242,9 @@ export async function planMetro(
   ds: Dataset, from: LngLat, to: LngLat, depart: Date, fastestWalkS: number, teen = false,
 ): Promise<MetroOption | null> {
   const g = buildGraph(ds);
+  const istH = ((depart.getTime() / 3_600_000 + 5.5) % 24 + 24) % 24;
+  const waitMin = istH >= 7 && istH < 22 ? ASSUMPTIONS.waitDayMin : ASSUMPTIONS.waitNightMin;
+  const waitS = waitMin * 60;
   if (flatDist(from[0], from[1], to[0], to[1]) < 1500) return null;
   const access = nearStations(g, from);
   const egress = nearStations(g, to);
@@ -209,7 +258,7 @@ export async function planMetro(
   const done = new Uint8Array(n);
   access.forEach((st, ai) => {
     for (const v of st.nodes) {
-      const c = estWalk(st.d) + ASSUMPTIONS.waitMin * 60;
+      const c = estWalk(st.d) + waitS;
       if (c < cost[v]) {
         cost[v] = c;
         origin[v] = ai;
@@ -221,9 +270,10 @@ export async function planMetro(
     for (let i = 0; i < n; i++) if (!done[i] && cost[i] < Infinity && (u < 0 || cost[i] < cost[u])) u = i;
     if (u < 0) break;
     done[u] = 1;
-    for (const [v, w] of g.adj[u]) {
-      if (cost[u] + w < cost[v]) {
-        cost[v] = cost[u] + w;
+    for (const [v, w, kind] of g.adj[u]) {
+      const step = w + transferS(kind, waitS);
+      if (cost[u] + step < cost[v]) {
+        cost[v] = cost[u] + step;
         prev[v] = u;
         origin[v] = origin[u];
       }
@@ -249,8 +299,8 @@ export async function planMetro(
   if (boardNode.name.toLowerCase() === alightNode.name.toLowerCase()) return null;
 
   const [leg1, leg2] = await Promise.all([
-    singleRoute("walk", from, [boardNode.lon, boardNode.lat]),
-    singleRoute("walk", [alightNode.lon, alightNode.lat], to),
+    stationWalk(from, [boardNode.lon, boardNode.lat], "to"),
+    stationWalk(to, [alightNode.lon, alightNode.lat], "from"),
   ]);
   if (!leg1 || !leg2) return null;
 
@@ -258,14 +308,26 @@ export async function planMetro(
   let rideS = 0;
   for (let i = 0; i < path.length; i++) {
     const nd = g.nodes[path[i]];
+    let kind: 0 | 1 | 2 = 0;
     if (i > 0) {
       const edge = g.adj[path[i - 1]].find(([v]) => v === path[i]);
-      if (edge) rideS += edge[1];
+      if (edge) {
+        rideS += edge[1] + transferS(edge[2], waitS);
+        kind = edge[2];
+      }
     }
     const line: MetroLine = ds.metro.lines[nd.line];
     const last = segments[segments.length - 1];
     const station = { name: nd.name, at: [nd.lon, nd.lat] as LngLat, t: Math.round(rideS) };
-    if (!last || i === 0 || g.nodes[path[i - 1]].line !== nd.line) {
+    if (kind === 2 && last) {
+      // Same line, other branch: carry on in the same segment; the interchange node repeats the station.
+      if (last.stations[last.stations.length - 1].name !== nd.name) {
+        last.to = nd.name;
+        last.stops++;
+        last.coords.push([nd.lon, nd.lat]);
+        last.stations.push(station);
+      }
+    } else if (!last || i === 0 || kind === 1) {
       segments.push({
         line: line.name.replace(/\s*\(.*\)$/, "").replace(/:.*$/, ""), ref: line.ref, colour: line.colour,
         operator: line.operator, from: nd.name, to: nd.name, stops: 0, coords: [[nd.lon, nd.lat]], stations: [station],
@@ -278,7 +340,7 @@ export async function planMetro(
     }
   }
   const rideSegments = segments.filter((s) => s.stops > 0);
-  rideS += ASSUMPTIONS.waitMin * 60;
+  rideS += waitS;
 
   const boardAt = new Date(depart.getTime() + leg1.duration * 1000);
   const alightAt = new Date(boardAt.getTime() + rideS * 1000);
@@ -302,6 +364,7 @@ export async function planMetro(
     alight: { station: alightNode.name, at: alightAt.toISOString(), arrive: arrive.toISOString() },
     assumptions: {
       ...ASSUMPTIONS,
+      waitMin,
       speedKmh: ds.metro.speedKmh ?? FALLBACK_SPEED_KMH,
       speedSource: ds.metro.speedSource,
     },
