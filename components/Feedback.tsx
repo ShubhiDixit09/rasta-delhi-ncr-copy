@@ -26,6 +26,35 @@ const isEnabled = () =>
   (enabled ??= fetch("/api/feedback").then((r) => r.json()).then((b) => Boolean(b.enabled)).catch(() => false));
 
 /**
+ * A small invitation shown inside a route's details, where people actually look. It opens the
+ * questions below the route list, and disappears once they are answered or dismissed for this trip.
+ */
+export function FeedbackNudge({ tripKey, onOpen }: { tripKey: string; onOpen: () => void }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(`ghartak-fb:${tripKey}`) !== null;
+    } catch {
+      // storage unavailable: still ask
+    }
+    if (seen) return setShow(false);
+    isEnabled().then(setShow);
+  }, [tripKey]);
+  if (!show) return null;
+  return (
+    <button type="button" className="fb-nudge" onClick={onOpen}>
+      <span className="fb-nudge-ic" aria-hidden>💛</span>
+      <span>
+        <b>Help other women get home safer</b>
+        <small>Which route would you take? 2 taps · anonymous</small>
+      </span>
+      <span className="fb-nudge-go" aria-hidden>›</span>
+    </button>
+  );
+}
+
+/**
  * Two required taps and one optional, asked once per trip. Answers are anonymous (see
  * app/api/feedback/route.ts) and are used to check the score's weights against what people
  * actually choose and how streets feel to people who know them.
@@ -137,7 +166,7 @@ export default function Feedback({ tripKey, mode, depart, from, to, routes, metr
   return (
     <section className="feedback" aria-label="Quick feedback">
       <div className="fb-head">
-        <strong>Help tune the score</strong>
+        <strong>💛 Help other women get home safer</strong>
         <span className="muted">anonymous, 2 taps</span>
         <button type="button" className="link" onClick={() => { remember(); setState("hidden"); }}>Not now</button>
       </div>

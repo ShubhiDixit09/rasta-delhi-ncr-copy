@@ -2810,3 +2810,32 @@ h1, h2, h3, .rc-top strong, .trip-eta b { letter-spacing: -0.015em; }
 /* Three travel modes need the full width; time and teen sit on the row below. */
 .plan-opts { flex-wrap: wrap; }
 .plan-opts .seg { flex-basis: 100%; }
+
+/* Feedback invitation */
+.fb-nudge {
+  width: 100%; margin-top: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 16px; text-align: left; cursor: pointer; color: var(--text);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent-fill) 20%, var(--raise)), var(--raise) 75%);
+  border: 1px solid color-mix(in srgb, var(--accent-fill) 40%, var(--line));
+  transition: transform 0.12s ease, border-color 0.15s ease;
+}
+.fb-nudge:hover { border-color: var(--accent-fill); }
+.fb-nudge:active { transform: scale(0.98); }
+.fb-nudge > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.fb-nudge b { font-size: 14.5px; }
+.fb-nudge small { font-size: 12.5px; color: var(--muted); }
+.fb-nudge-ic {
+  width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; flex: none;
+  background: color-mix(in srgb, var(--accent-fill) 22%, transparent); animation: fb-beat 2.4s ease-in-out infinite;
+}
+@keyframes fb-beat { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.14); } 90% { transform: scale(0.96); } }
+.fb-nudge-go { font-size: 22px; color: var(--accent); line-height: 1; }
+.feedback.flash { animation: fb-flash 1.4s ease; }
+@keyframes fb-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  25%, 60% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-fill) 55%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .fb-nudge-ic, .feedback.flash { animation: none; } }
+.fb-head { flex-wrap: wrap; row-gap: 2px; }
+.fb-head strong { flex: 1 1 100%; font-size: 15px; }
+.fb-head .link { margin-left: auto; }

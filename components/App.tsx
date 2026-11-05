@@ -14,7 +14,7 @@ import AlongRoute, { lightLabel } from "./AlongRoute";
 import Icon, { IconName } from "./Icon";
 import InstallApp from "./InstallApp";
 import { HelplineList, RouteHelp, SosButton } from "./Emergency";
-import Feedback from "./Feedback";
+import Feedback, { FeedbackNudge } from "./Feedback";
 import Share, { metroShareText, shareText } from "./Share";
 import ThemeToggle from "./ThemeToggle";
 import Timeline, { TimelineData } from "./Timeline";
@@ -363,6 +363,26 @@ export default function App() {
     return () => ac.abort();
   }, [result, from, to, teen]);
 
+  // "Help other women" nudge: back to the list, then bring the questions into view and highlight them.
+  const [askFeedback, setAskFeedback] = useState(0);
+  useEffect(() => {
+    if (!askFeedback) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(".sheet-body .feedback");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.remove("flash");
+      void (el as HTMLElement).offsetWidth;
+      el.classList.add("flash");
+    }, 320);
+    return () => clearTimeout(t);
+  }, [askFeedback]);
+  const openFeedback = () => {
+    setDetail(false);
+    setSnap((s) => (s === "peek" ? "half" : s));
+    setAskFeedback(Date.now());
+  };
+
   // A new view starts at the top of the sheet.
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 });
@@ -630,6 +650,7 @@ export default function App() {
             <>
               {teen && <TeenBox r={r} mode={result.mode} depart={result.depart} />}
               <WhyList r={r} fastest={fastestRoute} mode={result.mode} onHelp={() => setTab("help")} />
+              <FeedbackNudge tripKey={`${result.mode}|${from.point.join(",")}|${to.point.join(",")}`} onOpen={openFeedback} />
               <details className="how">
                 <summary>How this score is made</summary>
                 <ScoreDetails r={r} mode={result.mode} />
@@ -667,7 +688,11 @@ export default function App() {
             <p className="muted">{fmtDistance(selMetro.walkDistance)} on foot · {selMetro.board.station} → {selMetro.alight.station}</p>
           </div>
         </div>
-        <div className="tab-body"><MetroBreakdown m={selMetro} />{contactUs}</div>
+        <div className="tab-body">
+          <MetroBreakdown m={selMetro} />
+          <FeedbackNudge tripKey={`${result.mode}|${from.point.join(",")}|${to.point.join(",")}`} onOpen={openFeedback} />
+          {contactUs}
+        </div>
         <div className="actions">
           <button type="button" className="btn start-trip" onClick={() => setTripStart(true)}>
             <Icon name="train" />
