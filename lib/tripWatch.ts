@@ -1,4 +1,5 @@
 import { M_PER_DEG_LAT, M_PER_DEG_LON, type LngLat } from "./geo";
+import { t } from "./i18n";
 
 /**
  * Trip mode's judgement, kept free of React and the browser so it can be tested with simulated walks.
@@ -192,7 +193,7 @@ export class TripWatcher {
       const span = win.length ? (win[win.length - 1].t - win[0].t) / 1000 : 0;
       const away = (f: Matched) => f.off > Math.max(r.offRouteM, 1.5 * f.acc);
       if (win.length >= 3 && span >= r.offRouteForS * 0.8 && win.every(away)) {
-        return { kind: "off", reason: `You're about ${roundM(last.off)} away from your route.` };
+        return { kind: "off", reason: t("You're about {d} away from your route.", { d: roundM(last.off) }) };
       }
     }
 
@@ -204,7 +205,7 @@ export class TripWatcher {
         const dt = (b.t - a.t) / 1000;
         const kmh = (dist(this.track, a, b) / Math.max(1, dt)) * 3.6;
         if (dt >= r.vehicleForS * 0.8 && kmh > r.vehicleKmh) {
-          return { kind: "vehicle", reason: `You're moving at about ${Math.round(kmh)} km/h, faster than walking.` };
+          return { kind: "vehicle", reason: t("You're moving at about {k} km/h, faster than walking.", { k: Math.round(kmh) }) };
         }
       }
     }
@@ -218,14 +219,14 @@ export class TripWatcher {
         const cy = win.reduce((s, f) => s + f.lat, 0) / win.length;
         const spread = Math.max(...win.map((f) => dist(this.track, f, { lon: cx, lat: cy })));
         if (spread <= r.stopRadiusM + Math.min(30, last.acc)) {
-          return { kind: "stopped", reason: `You haven't moved for ${Math.round(r.stopForS / 60)} minutes.` };
+          return { kind: "stopped", reason: t("You haven't moved for {m} minutes.", { m: Math.round(r.stopForS / 60) }) };
         }
       }
     }
 
     if (ok("late") && now > this.lateAt) {
       const mins = Math.round((now - (this.startMs + this.plannedS * 1000)) / 60_000);
-      return { kind: "late", reason: `You're ${mins} minutes past the time you expected to arrive.` };
+      return { kind: "late", reason: t("You're {m} minutes past the time you expected to arrive.", { m: mins }) };
     }
     return null;
   }
@@ -252,10 +253,10 @@ export function ahead(
   help: { kind: "hospital" | "police"; name: string; at: number; phone: string | null }[],
 ): { tone: "warn" | "info"; text: string; phone?: string | null } | null {
   const inGap = gaps.find((g) => along >= g.startAt && along <= g.startAt + g.length);
-  if (inGap) return { tone: "warn", text: `Nothing open for the next ${roundM(inGap.startAt + inGap.length - along)}. Stay on the main road if you can.` };
+  if (inGap) return { tone: "warn", text: t("Nothing open for the next {d}. Stay on the main road if you can.", { d: roundM(inGap.startAt + inGap.length - along) }) };
   const gap = gaps.filter((g) => g.startAt > along && g.startAt - along <= 600 && g.length >= 200).sort((a, b) => a.startAt - b.startAt)[0];
-  if (gap) return { tone: "warn", text: `In ${roundM(gap.startAt - along)}: ${roundM(gap.length)} with nothing open.` };
+  if (gap) return { tone: "warn", text: t("In {a}: {d} with nothing open.", { a: roundM(gap.startAt - along), d: roundM(gap.length) }) };
   const h = help.filter((p) => p.at > along && p.at - along <= 2000).sort((a, b) => a.at - b.at)[0];
-  if (h) return { tone: "info", text: `${h.kind === "police" ? "Police" : "Hospital"} in ${roundM(h.at - along)}: ${h.name}`, phone: h.phone };
+  if (h) return { tone: "info", text: t(h.kind === "police" ? "Police in {d}: {n}" : "Hospital in {d}: {n}", { d: roundM(h.at - along), n: h.name }), phone: h.phone };
   return null;
 }

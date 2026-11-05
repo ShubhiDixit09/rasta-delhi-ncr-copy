@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { LiveTrip } from "@/lib/live";
 import { HelplineList } from "./Emergency";
 import Icon from "./Icon";
+import { t, t as tr, useLang } from "@/lib/i18n";
 import { fmtDistance } from "./format";
 
 /** What a trusted contact sees from the live link: the person on their route, their ETA and status. */
@@ -20,12 +21,13 @@ const clock = (iso: string) =>
 
 function ago(iso: string, now: number) {
   const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
-  if (s < 60) return `${s} s ago`;
+  if (s < 60) return t("{s} s ago", { s });
   const m = Math.round(s / 60);
-  return m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ${m % 60} min ago`;
+  return m < 60 ? t("{m} min ago", { m }) : t("{h} h {m} min ago", { h: Math.floor(m / 60), m: m % 60 });
 }
 
 export default function LiveView({ id }: { id: string }) {
+  useLang();
   const [trip, setTrip] = useState<LiveTrip | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -43,13 +45,13 @@ export default function LiveView({ id }: { id: string }) {
         const r = await fetch(`/api/live/${id}`, { cache: "no-store" });
         const b = await r.json();
         if (stop) return;
-        if (!r.ok) setError(b.error ?? "This link isn't working.");
+        if (!r.ok) setError(b.error ?? tr("This link isn't working."));
         else {
           setTrip(b);
           setError(null);
         }
       } catch {
-        if (!stop) setError("Can't reach Ghar Tak right now. Retrying…");
+        if (!stop) setError(tr("Can't reach Ghar Tak right now. Retrying…"));
       }
     };
     poll();
@@ -107,7 +109,7 @@ export default function LiveView({ id }: { id: string }) {
     }
   }, [trip, ready]);
 
-  const who = trip?.name || "Your contact";
+  const who = trip?.name || t("Your contact");
   // One clock for both "Live" and "Last update": when the server last heard from the phone.
   const lastSeen = trip?.updatedAt;
   const active = trip && (trip.status === "on_way" || trip.status === "check");
@@ -121,24 +123,24 @@ export default function LiveView({ id }: { id: string }) {
   if (trip?.status === "alert") {
     banner = (
       <div className="live-banner alert">
-        <b>Alert at {clock(trip.statusAt)}</b>
-        <span>{trip.reason ?? "They may need help."} Call {trip.name || "them"} now. If you can&apos;t reach them, call 112.</span>
-        <a className="sos-call" href="tel:112">Call 112</a>
+        <b>{t("Alert at {t}", { t: clock(trip.statusAt) })}</b>
+        <span>{trip.reason ?? t("They may need help.")} {t("Call {n} now. If you can't reach them, call 112.", { n: trip.name || t("them") })}</span>
+        <a className="sos-call" href="tel:112">{t("Call 112")}</a>
       </div>
     );
   } else if (trip?.status === "check") {
-    banner = <div className="live-banner check"><b>Checking on {who}</b><span>{trip.reason} Ghar Tak asked if they&apos;re OK.</span></div>;
+    banner = <div className="live-banner check"><b>{t("Checking on {n}", { n: who })}</b><span>{trip.reason} {t("Ghar Tak asked if they're OK.")}</span></div>;
   } else if (stale) {
     banner = (
       <div className="live-banner check">
-        <b>No update for {ago(trip!.updatedAt, now).replace(" ago", "")}</b>
-        <span>Their phone may be locked, offline or out of battery. Try calling them.</span>
+        <b>{t("No update since {t}", { t: clock(trip!.updatedAt) })}</b>
+        <span>{t("Their phone may be locked, offline or out of battery. Try calling them.")}</span>
       </div>
     );
   } else if (trip?.status === "arrived") {
-    banner = <div className="live-banner ok"><b>{who} reached {trip.to}</b><span>at {clock(trip.statusAt)} ✅</span></div>;
+    banner = <div className="live-banner ok"><b>{t("{n} reached {p}", { n: who, p: trip.to })}</b><span>{t("at {t}", { t: clock(trip.statusAt) })} ✅</span></div>;
   } else if (trip?.status === "ended") {
-    banner = <div className="live-banner"><b>This trip has ended</b><span>at {clock(trip.statusAt)}</span></div>;
+    banner = <div className="live-banner"><b>{t("This trip has ended")}</b><span>{t("at {t}", { t: clock(trip.statusAt) })}</span></div>;
   }
 
   return (
@@ -148,36 +150,36 @@ export default function LiveView({ id }: { id: string }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/logo.svg" alt="" width={26} height={26} />
         <div>
-          <b>{trip ? `${who} is ${trip.status === "arrived" ? "home" : trip.status === "ended" ? "off the trip" : "on the way"}` : "Live trip"}</b>
-          {trip && <span className="muted">{trip.mode === "metro" ? "By metro" : trip.mode === "walk" ? "Walking" : "By cab"} · {trip.from} → {trip.to}</span>}
+          <b>{trip ? t(trip.status === "arrived" ? "{n} is home" : trip.status === "ended" ? "{n} is off the trip" : "{n} is on the way", { n: who }) : t("Live trip")}</b>
+          {trip && <span className="muted">{t(trip.mode === "metro" ? "By metro" : trip.mode === "walk" ? "Walking" : "By cab")} · {trip.from} → {trip.to}</span>}
         </div>
       </header>
       <section className="live-card">
         {error && !trip && <p className="error">{error}</p>}
-        {!error && !trip && <p className="muted">Loading the trip…</p>}
+        {!error && !trip && <p className="muted">{t("Loading the trip…")}</p>}
         {banner}
         {trip && trip.status !== "arrived" && trip.status !== "ended" && (
           <>
             <div className="trip-eta">
-              <div><b>Arrives ~{clock(trip.eta)}</b><span className="muted"> · {fmtDistance(Math.max(0, trip.distance - trip.along))} left</span></div>
+              <div><b>{t("Arrives ~{t}", { t: clock(trip.eta) })}</b><span className="muted"> · {t("{d} left", { d: fmtDistance(Math.max(0, trip.distance - trip.along)) })}</span></div>
               {lastSeen && (
-                <span className={live ? "fresh live" : "fresh"}><i />{live ? "Live" : `Last update ${ago(lastSeen, now)}`}</span>
+                <span className={live ? "fresh live" : "fresh"}><i />{live ? t("Live") : t("Last update {a}", { a: ago(lastSeen, now) })}</span>
               )}
             </div>
             <div className="trip-progress"><i style={{ width: `${progress * 100}%` }} /></div>
-            {trip.pos?.src === "estimate" && <p className="small muted">On the metro underground: position estimated from the timetable.</p>}
-            {trip.pos?.src === "network" && <p className="small muted">Approximate location (±{fmtDistance(trip.pos.acc)}): GPS is weak, using the phone network.</p>}
+            {trip.pos?.src === "estimate" && <p className="small muted">{t("On the metro underground: position estimated from the timetable.")}</p>}
+            {trip.pos?.src === "network" && <p className="small muted">{t("Approximate location (±{d}): GPS is weak, using the phone network.", { d: fmtDistance(trip.pos.acc) })}</p>}
             <p className="muted small">
-              <Icon name="info" size={13} /> Blue line: where they have been. Amber: the route they planned. Started {clock(trip.startedAt)}.
+              <Icon name="info" size={13} /> {t("Blue line: where they have been. Amber: the route they planned. Started {t}.", { t: clock(trip.startedAt) })}
             </p>
           </>
         )}
         <details className="how">
-          <summary>Emergency numbers</summary>
+          <summary>{t("Emergency numbers")}</summary>
           <HelplineList />
         </details>
-        {trip && <p className="note">This page shows {trip.name || "your contact"}&apos;s location, sent from their phone. It never uses yours.</p>}
-        <p className="note">Shared from Ghar Tak, night routes for Delhi NCR. This link stops working an hour after the trip ends.</p>
+        {trip && <p className="note">{t("This page shows {n}'s location, sent from their phone. It never uses yours.", { n: trip.name || t("your contact") })}</p>}
+        <p className="note">{t("Shared from Ghar Tak, night routes for Delhi NCR. This link stops working an hour after the trip ends.")}</p>
       </section>
     </div>
   );

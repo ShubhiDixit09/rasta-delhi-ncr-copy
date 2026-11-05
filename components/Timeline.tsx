@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t as tr } from "@/lib/i18n";
 
 export interface TimelineData {
   slots: string[];
@@ -62,8 +63,8 @@ export default function Timeline({ data, routeId, depart, onPick }: Props) {
   if (run) {
     const [a, b, best] = run;
     const window = a === b ? fmt(data.slots[a]) : `${fmt(data.slots[a])}–${fmt(data.slots[b])}`;
-    line = `Best to leave ${window} (score ${best}).`;
-    if (cur !== null && cur < best - 2) line += ` Leaving at ${fmt(data.slots[current])} scores ${cur}.`;
+    line = tr("Best to leave {w} (score {s}).", { w: window, s: best });
+    if (cur !== null && cur < best - 2) line += " " + tr("Leaving at {w} scores {s}.", { w: fmt(data.slots[current]), s: cur });
   }
 
   const h = hover;
@@ -71,8 +72,8 @@ export default function Timeline({ data, routeId, depart, onPick }: Props) {
   return (
     <figure className="timeline">
       <figcaption>
-        <span>Night score by departure time</span>
-        <span className="muted">every {data.stepMinutes} min · tap a bar to use it</span>
+        <span>{tr("Night score by departure time")}</span>
+        <span className="muted">{tr("every {m} min · tap a bar to use it", { m: data.stepMinutes })}</span>
       </figcaption>
       <div className="timeline-plot">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Night score for this route from ${fmt(data.slots[0])} to ${fmt(data.slots[n - 1])}. ${line}`}>
@@ -112,8 +113,8 @@ export default function Timeline({ data, routeId, depart, onPick }: Props) {
       <p className="timeline-line" aria-live="polite">
         {h !== null ? (
           <>
-            <strong>{fmt(data.slots[h])}</strong>: score {route.scores[h] ?? "–"}, {route.open[h]} open beside the route
-            {route.longestGap[h] >= 100 && <>, longest empty stretch {(route.longestGap[h] / 1000).toFixed(1)} km</>}
+            <strong>{fmt(data.slots[h])}</strong>: {tr("score {s}, {n} open beside the route", { s: route.scores[h] ?? "–", n: route.open[h] })}
+            {route.longestGap[h] >= 100 && <>, {tr("longest empty stretch {d} km", { d: (route.longestGap[h] / 1000).toFixed(1) })}</>}
           </>
         ) : (
           line

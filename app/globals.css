@@ -2863,3 +2863,11 @@ h1, h2, h3, .rc-top strong, .trip-eta b { letter-spacing: -0.015em; }
 
 .onboard.out { animation: ob-leave 0.28s ease forwards; }
 @keyframes ob-leave { to { opacity: 0; transform: scale(1.03); } }
+
+/* Language switch */
+.lang-chip {
+  height: 30px; min-width: 34px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--raise);
+  color: var(--text-2); font-size: 13px; font-weight: 750; cursor: pointer;
+}
+:root[lang="hi"] body { font-family: Inter, "Noto Sans Devanagari", "Kohinoor Devanagari", "Mukta", system-ui, sans-serif; }
+:root[lang="hi"] .tabs button { font-size: 14px; }

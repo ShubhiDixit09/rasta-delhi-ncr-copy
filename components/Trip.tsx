@@ -10,6 +10,7 @@ import { HelplineList } from "./Emergency";
 import Icon from "./Icon";
 import { ContactsDialog } from "./TrustedContacts";
 import { fmtDistance, fmtDuration } from "./format";
+import { pl, rich, t } from "@/lib/i18n";
 
 /**
  * Trip mode. The phone follows the person along the chosen route and checks in when something looks
@@ -194,14 +195,14 @@ export function TripStart({ route, mode, from, to, metro, onStart, onCancel }: {
 
   const start = async () => {
     setError(null);
-    if (!navigator.geolocation) return setError("This browser can't share your location, so trip mode can't follow you.");
-    setBusy("Getting your location…");
+    if (!navigator.geolocation) return setError(t("This browser can't share your location, so trip mode can't follow you."));
+    setBusy(t("Getting your location…"));
     const pos = await new Promise<GeolocationPosition | null>((res) =>
       navigator.geolocation.getCurrentPosition(res, () => res(null), { enableHighAccuracy: true, timeout: 15_000 }),
     );
     if (!pos) {
       setBusy(null);
-      return setError("Location is off or blocked. Allow location for this site, then try again.");
+      return setError(t("Location is off or blocked. Allow location for this site, then try again."));
     }
     try {
       localStorage.setItem(NAME_KEY, name.trim());
@@ -212,7 +213,7 @@ export function TripStart({ route, mode, from, to, metro, onStart, onCancel }: {
     const eta = startedAt + route.duration * 1000;
     let live: TripSession["live"] = null;
     if (share && liveOk) {
-      setBusy("Creating your live link…");
+      setBusy(t("Creating your live link…"));
       try {
         const r = await fetch("/api/live", {
           method: "POST", headers: { "content-type": "application/json" },
@@ -231,13 +232,13 @@ export function TripStart({ route, mode, from, to, metro, onStart, onCancel }: {
     onStart(session);
     setBusy(null);
     if (share && contacts.length) {
-      const who = name.trim() ? `${name.trim()} here. ` : "";
-      const how = metro ? `by metro (${metro.line})` : mode === "walk" ? "walking" : "by cab";
+      const who = name.trim() ? t("{n} here. ", { n: name.trim() }) : "";
+      const how = metro ? t("by metro ({l})", { l: metro.line }) : mode === "walk" ? t("walking") : t("by cab");
       const msg =
-        `${who}I'm heading from ${from} to ${to} (${how}, about ${fmtDuration(route.duration)}, should reach around ${clock(eta)}).` +
+        who + t("I'm heading from {a} to {b} ({how}, about {d}, should reach around {eta}).", { a: from, b: to, how, d: fmtDuration(route.duration), eta: clock(eta) }) +
         (live
-          ? `\nFollow me live: ${live.url}\nIf I don't answer a check-in on the way, it will show there in red.`
-          : "\nI'll message you when I reach.");
+          ? "\n" + t("Follow me live: {u}", { u: live.url }) + "\n" + t("If I don't answer a check-in on the way, it will show there in red.")
+          : "\n" + t("I'll message you when I reach."));
       await sendToContacts(contacts, msg);
     }
   };
@@ -246,49 +247,48 @@ export function TripStart({ route, mode, from, to, metro, onStart, onCancel }: {
     <div className="view trip-start">
       <div className="view-head">
         <button type="button" className="icon-btn" aria-label="Back" onClick={onCancel}><Icon name="left" /></button>
-        <h2>Start trip</h2>
+        <h2>{t("Start trip")}</h2>
       </div>
       <p className="lead">
-        Ghar Tak follows you along this route ({fmtDuration(route.duration)}, {fmtDistance(route.distance)}) and checks on you
-        if something seems off.
+        {t("Ghar Tak follows you along this route ({d}, {km}) and checks on you if something seems off.", { d: fmtDuration(route.duration), km: fmtDistance(route.distance) })}
       </p>
       <ul className="why trip-points">
-        <li><span className="why-ic good"><Icon name="alert" size={15} /></span><span><b>Asks &ldquo;Are you OK?&rdquo;</b> if you leave the route, stop for long, run late, or start moving at vehicle speed on foot.</span></li>
-        <li><span className="why-ic warn"><Icon name="phone" size={15} /></span><span><b>No answer in a minute?</b> An alarm sounds and a message to your contacts is ready to send.</span></li>
-        <li><span className="why-ic good"><Icon name="check" size={15} /></span><span><b>Reached?</b> One tap tells everyone you&apos;re home.</span></li>
+        <li><span className="why-ic good"><Icon name="alert" size={15} /></span><span>{rich("**Asks “Are you OK?”** if you leave the route, stop for long, run late, or start moving at vehicle speed on foot.")}</span></li>
+        <li><span className="why-ic warn"><Icon name="phone" size={15} /></span><span>{rich("**No answer in a minute?** An alarm sounds and a message to your contacts is ready to send.")}</span></li>
+        <li><span className="why-ic good"><Icon name="check" size={15} /></span><span>{rich("**Reached?** One tap tells everyone you're home.")}</span></li>
       </ul>
 
       <div className="trip-box">
         <label className="trip-row">
           <span>
-            <b>Tell my trusted contacts</b>
+            <b>{t("Tell my trusted contacts")}</b>
             <small>
               {contacts.length
                 ? `${contacts.map((c) => c.name).slice(0, 3).join(", ")}${contacts.length > 3 ? ` +${contacts.length - 3}` : ""}`
-                : "No contacts saved yet"}
-              {liveOk ? " · with a live link to follow you" : liveOk === false ? " · live link not available here" : ""}
+                : t("No contacts saved yet")}
+              {liveOk ? ` · ${t("with a live link to follow you")}` : liveOk === false ? ` · ${t("live link not available here")}` : ""}
             </small>
           </span>
           <input type="checkbox" className="toggle" checked={share} onChange={(e) => setShare(e.target.checked)} />
         </label>
         <button type="button" className="link" onClick={() => dialog.current?.showModal()}>
-          {contacts.length ? "Edit contacts" : "Add contacts"}
+          {contacts.length ? t("Edit contacts") : t("Add contacts")}
         </button>
         <label className="trip-name">
-          <span>Your name in the message (optional)</span>
-          <input value={name} maxLength={40} placeholder="e.g. Riya" onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
+          <span>{t("Your name in the message (optional)")}</span>
+          <input value={name} maxLength={40} placeholder={t("e.g. Riya")} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
         </label>
       </div>
 
       <p className="note">
-        Keep Ghar Tak open on screen during the trip: phones pause websites in the background. The screen stays on while a
-        trip is running.{share && liveOk ? " Anyone with the link sees your location until the trip ends; it is deleted an hour later." : ""}
+        {t("Keep Ghar Tak open on screen during the trip: phones pause websites in the background. The screen stays on while a trip is running.")}
+        {share && liveOk ? " " + t("Anyone with the link sees your location until the trip ends; it is deleted an hour later.") : ""}
       </p>
       {error && <p className="error-inline">{error}</p>}
       <div className="actions">
         <button type="button" className="btn primary big" onClick={start} disabled={busy !== null}>
           <Icon name="walk" />
-          {busy ?? "Start trip"}
+          {busy ?? t("Start trip")}
         </button>
       </div>
       <ContactsDialog
@@ -464,7 +464,7 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
   useEffect(() => {
     if (arrived || alarm) return;
     if (check) {
-      if (now - check.since >= CHECK_SECONDS * 1000) raiseAlarm(`Didn't answer a check-in: ${check.reason}`);
+      if (now - check.since >= CHECK_SECONDS * 1000) raiseAlarm(t("Didn't answer a check-in: {r}", { r: check.reason }));
       else if (now - lastBuzz.current >= 5000) {
         lastBuzz.current = now;
         navigator.vibrate?.([300, 150, 300]);
@@ -522,17 +522,17 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
   const messageContacts = async (kind: "help" | "reached") => {
     const list = loadContacts();
     if (!list.length) {
-      setSent("No trusted contacts saved. Add them from Start trip.");
+      setSent(t("No trusted contacts saved. Add them from Start trip."));
       return;
     }
-    const who = session.name ? `${session.name} here. ` : "";
+    const who = session.name ? t("{n} here. ", { n: session.name }) : "";
     const msg =
       kind === "help"
-        ? `${who}I may need help. I'm on my way from ${session.from} to ${session.to}. Please call me.` +
-          (session.live ? `\nLive: ${session.live.url}` : "")
-        : `${who}Reached ${session.to} safely ✅`;
+        ? who + t("I may need help. I'm on my way from {a} to {b}. Please call me.", { a: session.from, b: session.to }) +
+          (session.live ? "\n" + t("Live: {u}", { u: session.live.url }) : "")
+        : who + t("Reached {b} safely ✅", { b: session.to });
     await sendToContacts(list, msg);
-    setSent(kind === "help" ? "Your messages app is open with the alert. Press send." : "Your messages app is open. Press send.");
+    setSent(kind === "help" ? t("Your messages app is open with the alert. Press send.") : t("Your messages app is open. Press send."));
   };
 
   const end = async () => {
@@ -548,13 +548,13 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
   const stale = fix ? now - fix.t > 120_000 : now - session.startedAt > 60_000;
   const offRoute = fix ? fix.off > Math.max(watcher.rules.offRouteM, 1.5 * fix.acc) : false;
   const next = !fix ? null
-    : offRoute ? { tone: "warn" as const, text: `You're about ${fmtDistance(fix.off)} from your route.`, phone: null }
+    : offRoute ? { tone: "warn" as const, text: t("You're about {d} from your route.", { d: fmtDistance(fix.off) }), phone: null }
     : ahead(route.distance - remaining, route.gaps, route.emergency);
   const ride = plan && onRide && boardedAt.current !== null ? rideEstimate(plan, (now - boardedAt.current) / 1000) : null;
-  const srcLabel = src === "estimate" ? "Estimated from metro timetable"
-    : src === "network" ? `Network location ±${fmtDistance(fix?.acc ?? 0)}` : fix ? `GPS ±${Math.round(fix.acc)} m` : "Finding you…";
-    const status = gpsError || stale ? { tone: "warn", text: gpsError ?? "Waiting for GPS…" }
-    : offRoute ? { tone: "warn", text: "Off your route" } : { tone: "good", text: "On your route" };
+  const srcLabel = src === "estimate" ? t("Estimated from metro timetable")
+    : src === "network" ? t("Network location ±{d}", { d: fmtDistance(fix?.acc ?? 0) }) : fix ? `GPS ±${Math.round(fix.acc)} m` : t("Finding you…");
+    const status = gpsError || stale ? { tone: "warn", text: gpsError ?? t("Waiting for GPS…") }
+    : offRoute ? { tone: "warn", text: t("Off your route") } : { tone: "good", text: t("On your route") };
 
   if (arrived) {
     return (
@@ -562,17 +562,17 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
         <div className="trip-hero">
           <span className="why-ic good big"><Icon name="check" size={26} /></span>
           <div>
-            <h2>You&apos;ve arrived</h2>
-            <p className="muted">{session.to} · trip took {fmtDuration((Date.now() - session.startedAt) / 1000)}</p>
+            <h2>{t("You've arrived")}</h2>
+            <p className="muted">{session.to} · {t("trip took {d}", { d: fmtDuration((Date.now() - session.startedAt) / 1000) })}</p>
           </div>
         </div>
         <button type="button" className="btn primary big" onClick={() => messageContacts("reached")}>
           <Icon name="users" />
-          Tell my people I reached
+          {t("Tell my people I reached")}
         </button>
         {sent && <p className="share-status">{sent}</p>}
         {feedback}
-        <button type="button" className="btn big" onClick={end}>End trip</button>
+        <button type="button" className="btn big" onClick={end}>{t("End trip")}</button>
       </div>
     );
   }
@@ -584,22 +584,22 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
       <div className="trip-top">
         <span className={`pill ${status.tone}`}><i />{status.text}</span>
         {session.live ? (
-          <span className={liveOk ? "pill live" : "pill warn"}><i />{liveOk ? "Live link on" : "Live link offline"}</span>
+          <span className={liveOk ? "pill live" : "pill warn"}><i />{liveOk ? t("Live link on") : t("Live link offline")}</span>
         ) : (
-          <span className="pill"><i />Not shared live</span>
+          <span className="pill"><i />{t("Not shared live")}</span>
         )}
       </div>
       <div className="trip-eta">
         <div>
           <b>{fmtDuration(Math.max(0, (eta - now) / 1000))}</b>
-          <span className="muted"> · {fmtDistance(remaining)} left</span>
+          <span className="muted"> · {t("{d} left", { d: fmtDistance(remaining) })}</span>
         </div>
-        <span className="muted">Arrive ~{clock(eta)}</span>
+        <span className="muted">{t("Arrive ~{t}", { t: clock(eta) })}</span>
       </div>
       <div className="trip-progress" role="progressbar" aria-valuenow={Math.round(done * 100)} aria-valuemin={0} aria-valuemax={100}>
         <i style={{ width: `${done * 100}%` }} />
       </div>
-      <p className="muted small trip-to">To {session.to}</p>
+      <p className="muted small trip-to">{t("To {p}", { p: session.to })}</p>
 
       <p className={`loc-src ${src}`}><i />{srcLabel}</p>
 
@@ -610,21 +610,21 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
               const cur = plan.stations[Math.max(0, ride.index - 1)] ?? plan.stations[0];
               return <span className="line-chip"><i style={{ background: cur.colour }} />{cur.line}</span>;
             })()}
-            <span className="muted">On the metro</span>
+            <span className="muted">{t("On the metro")}</span>
           </div>
           {(() => {
             const ch = ride.next && plan.changes?.find((c) => ride.next!.name.startsWith(c.station.replace(/\s*\(.*\)$/, "")));
             return ch ? (
               <div className="ml-change">
                 <Icon name="swap" size={16} />
-                <span>Change at <b>{ride.next!.name}</b> for the <b>{ch.line}</b> towards {ch.towards}</span>
+                <span>{rich("Change at **{s}** for the **{l}** towards {d}", { s: ride.next!.name, l: ch.line, d: ch.towards })}</span>
               </div>
             ) : null;
           })()}
           {ride.next ? (
-            <p><b>Next: {ride.next.name}</b> · ~{Math.max(1, Math.round(ride.nextInS / 60))} min</p>
+            <p><b>{t("Next: {s}", { s: ride.next.name })}</b> · ~{t("{m} min", { m: Math.max(1, Math.round(ride.nextInS / 60)) })}</p>
           ) : (
-            <p><b>Arriving at {plan.stations[plan.stations.length - 1].name}</b></p>
+            <p><b>{t("Arriving at {s}", { s: plan.stations[plan.stations.length - 1].name })}</b></p>
           )}
           <ol className="ml-stations">
             {plan.stations.map((st, i) => (
@@ -633,16 +633,19 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
               </li>
             ))}
           </ol>
-          <p className="small muted">Underground, GPS drops out: Ghar Tak estimates your station from the timetable. Listen to the announcements to confirm.</p>
+          <p className="small muted">{t("Underground, GPS drops out: Ghar Tak estimates your station from the timetable. Listen to the announcements to confirm.")}</p>
         </div>
       )}
       {plan && !ride && boardedAt.current === null && (
         <div className="ahead info">
           <Icon name="train" size={16} />
           <span>
-            Walk to <b>{plan.stations[0]?.name}</b>, take the {plan.line}{plan.towards ? ` towards ${plan.towards}` : ""}
-            {plan.changes?.map((c) => <> , change at <b>{c.station}</b> for the {c.line}{c.towards ? ` towards ${c.towards}` : ""}</>)}
-            , get off at <b>{plan.stations[plan.stations.length - 1]?.name}</b>.
+            {rich("Walk to **{s}**, take the {l}", { s: plan.stations[0]?.name ?? "", l: plan.line })}
+            {plan.towards ? " " + t("towards {d}", { d: plan.towards }) : ""}
+            {plan.changes?.map((c, i) => (
+              <span key={i}>, {rich("change at **{s}** for the {l}", { s: c.station, l: c.line })}{c.towards ? " " + t("towards {d}", { d: c.towards }) : ""}</span>
+            ))}
+            , {rich("get off at **{s}**.", { s: plan.stations[plan.stations.length - 1]?.name ?? "" })}
           </span>
         </div>
       )}
@@ -660,47 +663,47 @@ export function TripPanel({ session, onPosition, onEnd, feedback }: {
           <button
             type="button" className="btn"
             onClick={() => {
-              const text = `Follow my trip live: ${session.live!.url}`;
+              const text = t("Follow my trip live: {u}", { u: session.live!.url });
               if (navigator.share) navigator.share({ text }).catch(() => undefined);
-              else navigator.clipboard?.writeText(text).then(() => setSent("Live link copied."));
+              else navigator.clipboard?.writeText(text).then(() => setSent(t("Live link copied.")));
             }}
           >
             <Icon name="share" />
-            Share live link
+            {t("Share live link")}
           </button>
         )}
-        <button type="button" className="btn" onClick={end}>End trip</button>
+        <button type="button" className="btn" onClick={end}>{t("End trip")}</button>
       </div>
       {sent && <p className="share-status">{sent}</p>}
       <p className="note">
-        Keep Ghar Tak open. If you switch apps for long, your phone pauses it and check-ins stop.
-        {fix && fix.acc > 60 ? ` GPS is rough right now (±${Math.round(fix.acc)} m).` : ""}
+        {t("Keep Ghar Tak open. If you switch apps for long, your phone pauses it and check-ins stop.")}
+        {fix && fix.acc > 60 ? " " + t("GPS is rough right now (±{m} m).", { m: Math.round(fix.acc) }) : ""}
       </p>
       {feedback}
 
       <dialog ref={checkDialog} className={alarm ? "trip-check alarm" : "trip-check"} onCancel={(e) => e.preventDefault()}>
         {alarm ? (
           <>
-            <h2>Alert</h2>
+            <h2>{t("Alert")}</h2>
             <p>{alarm}</p>
-            {session.live && <p className="small">Your live link now shows this alert in red.</p>}
-            <a className="sos-call" href="tel:112">Call 112</a>
+            {session.live && <p className="small">{t("Your live link now shows this alert in red.")}</p>}
+            <a className="sos-call" href="tel:112">{t("Call 112")}</a>
             <button type="button" className="btn primary big" onClick={() => messageContacts("help")}>
               <Icon name="users" />
-              Message my contacts
+              {t("Message my contacts")}
             </button>
             {sent && <p className="share-status">{sent}</p>}
             <HelplineList compact />
-            <button type="button" className="btn big" onClick={imOk}>I&apos;m safe now</button>
+            <button type="button" className="btn big" onClick={imOk}>{t("I'm safe now")}</button>
           </>
         ) : check ? (
           <>
             <div className="count" style={{ "--p": (left / CHECK_SECONDS) * 100 } as React.CSSProperties}><b>{left}</b></div>
-            <h2>Are you OK?</h2>
+            <h2>{t("Are you OK?")}</h2>
             <p>{check.reason}</p>
-            <button type="button" className="btn ok big" onClick={imOk}>I&apos;m OK</button>
-            <button type="button" className="btn danger big" onClick={() => raiseAlarm(`Asked for help: ${check.reason}`)}>I need help</button>
-            <p className="small muted">If you don&apos;t answer, an alarm sounds{session.live ? " and your live link turns red" : ""}.</p>
+            <button type="button" className="btn ok big" onClick={imOk}>{t("I'm OK")}</button>
+            <button type="button" className="btn danger big" onClick={() => raiseAlarm(t("Asked for help: {r}", { r: check.reason }))}>{t("I need help")}</button>
+            <p className="small muted">{session.live ? t("If you don't answer, an alarm sounds and your live link turns red.") : t("If you don't answer, an alarm sounds.")}</p>
           </>
         ) : null}
       </dialog>
