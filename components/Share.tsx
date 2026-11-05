@@ -28,7 +28,7 @@ export function shareText({ route, mode, fromLabel, toLabel, depart, url }: Trip
   return (
     `I'm ${how} from ${fromLabel} to ${toLabel}. Leaving ${time(start)}, should reach around ${time(eta)} ` +
     `(${fmtDuration(route.duration)}, ${fmtDistance(route.distance)}${via}).\n` +
-    `My route: ${url}`
+    `My planned route (not live location): ${url}`
   );
 }
 
@@ -39,7 +39,7 @@ export function metroShareText({ metro, fromLabel, toLabel, depart, url }: {
   return (
     `I'm going from ${fromLabel} to ${toLabel}: walking to ${metro.board.station} metro, ${rides}, then walking ` +
     `${fmtDistance(metro.legs[1].distance)}. Leaving ${time(new Date(depart).getTime())}, should reach around ` +
-    `${time(new Date(metro.alight.arrive).getTime())}.\nMy route: ${url}`
+    `${time(new Date(metro.alight.arrive).getTime())}.\nMy planned route (not live location): ${url}`
   );
 }
 

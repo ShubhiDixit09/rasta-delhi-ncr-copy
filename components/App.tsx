@@ -18,7 +18,8 @@ import Feedback from "./Feedback";
 import Share, { metroShareText, shareText } from "./Share";
 import ThemeToggle from "./ThemeToggle";
 import Timeline, { TimelineData } from "./Timeline";
-import { TripPanel, TripSession, TripStart, loadTrip } from "./Trip";
+import { TripPanel, TripSession, TripStart, loadTrip, metroTrip } from "./Trip";
+import Onboarding, { PERSONAS, Persona, loadPersona, savePersona } from "./Onboarding";
 import { MAP_ASPECT, routeCard } from "./routeCard";
 import type { Snapshot } from "./MapView";
 
@@ -71,7 +72,9 @@ function readUrl() {
   return {
     from: pt(q.get("a"), q.get("an")),
     to: pt(q.get("b"), q.get("bn")),
-    mode: q.get("m") === "drive" ? ("drive" as const) : q.get("m") === "walk" ? ("walk" as const) : null,
+    mode: q.get("m") === "drive" ? ("drive" as const) : q.get("m") === "walk" || q.get("m") === "metro" ? ("walk" as const) : null,
+    metro: q.get("m") === "metro",
+    shared: q.get("sh") === "1",
     depart: t && !Number.isNaN(Date.parse(t)) ? new Date(t) : null,
     route: r !== null && /^\d{1,3}$/.test(r) ? Number(r) : null, // 0-2 routes, 100 = walk + metro
     teen: q.get("teen") === "1",
@@ -79,7 +82,8 @@ function readUrl() {
 }
 
 function tripUrl(
-  from: Picked | null, to: Picked | null, mode: Mode, depart: string | null, route: number | null, teen = false,
+  from: Picked | null, to: Picked | null, mode: Mode | "metro", depart: string | null, route: number | null, teen = false,
+  shared = false,
 ): string {
   const q = new URLSearchParams();
   const ll = (p: Picked) => `${p.point[0].toFixed(5)},${p.point[1].toFixed(5)}`;
@@ -89,6 +93,7 @@ function tripUrl(
   if (depart) q.set("t", new Date(depart).toISOString().replace(/:00\.000Z$/, "Z"));
   if (route !== null) q.set("r", String(route));
   if (teen) q.set("teen", "1");
+  if (shared) q.set("sh", "1");
   return `${window.location.origin}${window.location.pathname}?${q}`;
 }
 
@@ -188,6 +193,27 @@ export default function App() {
   const [from, setFrom] = useState<Picked | null>(null);
   const [to, setTo] = useState<Picked | null>(null);
   const [mode, setMode] = useState<Mode>("walk");
+  // Metro mode plans on foot and puts walk + metro first; the API itself only knows walk and drive.
+  const [metroMode, setMetroMode] = useState(false);
+  const [sharedView, setSharedView] = useState(false);
+  const [persona, setPersonaState] = useState<Persona | null | undefined>(undefined);
+  const [askPersona, setAskPersona] = useState(false);
+  const metroRef = useRef(false);
+  useEffect(() => {
+    if (persona !== undefined) document.documentElement.dataset.persona = persona ?? "";
+  }, [persona]);
+  const pickPersona = (p: Persona) => {
+    savePersona(p);
+    if (p === "teen") setTeen(true);
+    else if (persona === "teen") setTeen(false);
+    if (p === "senior") {
+      setMode("drive");
+      setMetroMode(false);
+    }
+    setPersonaState(p);
+    setAskPersona(false);
+  };
+  metroRef.current = metroMode;
   const [preset, setPreset] = useState<Preset>("now");
   const [custom, setCustom] = useState(() => istInputValue(nextIst(23)));
   const [result, setResult] = useState<ApiResult | null>(null);
@@ -233,6 +259,12 @@ export default function App() {
     if (u.from) setFrom(u.from);
     if (u.to) setTo(u.to);
     if (u.mode) setMode(u.mode);
+    if (u.metro) setMetroMode(true);
+    if (u.shared) setSharedView(true);
+    const p = loadPersona();
+    setPersonaState(p);
+    // First visit: ask who is using Ghar Tak. Never in front of a shared link or the SOS shortcut.
+    if (!p && !u.from && !u.to && !window.location.search.includes("sos=1")) setAskPersona(true);
     if (u.depart) {
       setPreset("custom");
       setCustom(istInputValue(u.depart));
@@ -266,8 +298,8 @@ export default function App() {
   // Mirror the trip into the address bar (without adding history entries).
   useEffect(() => {
     if (!restored.current) return;
-    window.history.replaceState(null, "", tripUrl(from, to, mode, depart, result ? selected : null, teen));
-  }, [from, to, mode, depart, selected, result, teen]);
+    window.history.replaceState(null, "", tripUrl(from, to, metroMode ? "metro" : mode, depart, result ? selected : null, teen, sharedView));
+  }, [from, to, mode, metroMode, depart, selected, result, teen, sharedView]);
 
   useEffect(() => {
     if (!from || !to) {
@@ -295,7 +327,7 @@ export default function App() {
         const want = wantRoute.current;
         wantRoute.current = null;
         const valid = want !== null && (body.routes.some((r) => r.id === want) || body.metro?.id === want);
-        setSelected(valid ? want : (best?.id ?? 0));
+        setSelected(valid ? want : metroRef.current && body.metro ? body.metro.id : (best?.id ?? 0));
         // A shared link opens straight on its route; a new search shows the list to compare.
         setDetail(valid);
         setTab("overview");
@@ -433,13 +465,13 @@ export default function App() {
     if (r) {
       return shareText({
         route: r, mode: result.mode, fromLabel: from.label, toLabel: to.label, depart: result.depart,
-        url: tripUrl(from, to, result.mode, result.depart, r.id, teen),
+        url: tripUrl(from, to, result.mode, result.depart, r.id, teen, true),
       });
     }
     return metro
       ? metroShareText({
           metro, fromLabel: from.label, toLabel: to.label, depart: result.depart,
-          url: tripUrl(from, to, result.mode, result.depart, metro.id, teen),
+          url: tripUrl(from, to, "metro", result.depart, metro.id, teen, true),
         })
       : "";
   };
@@ -471,6 +503,24 @@ export default function App() {
     </p>
   );
 
+  const metroCard = metro ? (
+    <li>
+                <button type="button" className={selected === metro.id ? "rcard sel" : "rcard"} onClick={() => openRoute(metro.id)}>
+                  <Ring score={metro.score} label="walk parts" />
+                  <span className="rc-main">
+                    <span className="rc-top"><strong>~{fmtDuration(metro.duration)}</strong><span className="muted">walk + metro</span></span>
+                    <span className="rc-why lines">
+                      {metro.ride.segments.map((sg, i) => (
+                        <span key={i} className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span>
+                      ))}
+                    </span>
+                    {metro.duration < fastest && <span className="tags"><span className="tag blue">Faster than walking</span></span>}
+                  </span>
+                  <Icon name="right" className="chev" />
+                </button>
+              </li>
+  ) : null;
+
   let body: React.ReactNode;
   if (session) {
     body = (
@@ -483,10 +533,11 @@ export default function App() {
         }}
       />
     );
-  } else if (tripStart && result && selRoute && from && to) {
+  } else if (tripStart && result && (selRoute || selMetro) && from && to) {
+    const mt = selMetro ? metroTrip(selMetro) : null;
     body = (
       <TripStart
-        route={selRoute} mode={result.mode} from={short(from)} to={short(to)}
+        route={mt ? mt.route : selRoute!} metro={mt?.metro} mode={result.mode} from={short(from)} to={short(to)}
         onCancel={() => setTripStart(false)}
         onStart={(s) => {
           setTripStart(false);
@@ -512,6 +563,17 @@ export default function App() {
     body = (
       <div className="view home">
         <h2>Where to tonight?</h2>
+        {persona === "parent" && (
+          <div className="persona-tip">
+            <b>Following your child or family?</b> Ask them to open Ghar Tak, pick their route and tap <b>Start trip</b>.
+            You&apos;ll get a live link that shows where they are, and turns red if they don&apos;t answer a check-in.
+          </div>
+        )}
+        {persona === "teen" && (
+          <div className="persona-tip">
+            <b>Teen mode is on.</b> Routes favour busy main roads, and <b>Start trip</b> keeps your guardians in the loop.
+          </div>
+        )}
         <p className="lead">
           Search two places, or tap the map to drop A, then B. Ghar Tak checks every route for the hour you&apos;ll be on
           it: what&apos;s open, how lit and busy it is, and where help is.
@@ -547,6 +609,12 @@ export default function App() {
             <p className="muted">{r.via ? `via ${r.via}` : scoreName}</p>
           </div>
         </div>
+        {sharedView && (
+          <div className="shared-note">
+            <Icon name="info" size={16} />
+            <span><b>Someone shared this route with you.</b> It&apos;s their plan, not their live location. To follow them live, ask them to tap <b>Start trip</b> and send you the link.</span>
+          </div>
+        )}
         <div className="tabs" role="tablist" aria-label="Route details">
           {TABS.map((t) => (
             <button
@@ -600,17 +668,37 @@ export default function App() {
           </div>
         </div>
         <div className="tab-body"><MetroBreakdown m={selMetro} />{contactUs}</div>
-        <div className="actions"><Share text={shareFor(selMetro.id)} /></div>
+        <div className="actions">
+          <button type="button" className="btn start-trip" onClick={() => setTripStart(true)}>
+            <Icon name="train" />
+            Start metro trip
+            <small>tracks your stations even underground</small>
+          </button>
+          <Share text={shareFor(selMetro.id)} />
+        </div>
       </div>
     );
   } else if (result) {
     body = (
       <div className="view">
+        {sharedView && (
+          <div className="shared-note">
+            <Icon name="info" size={16} />
+            <span><b>Someone shared this route with you.</b> It&apos;s their plan, not their live location. To follow them live, ask them to tap <b>Start trip</b> and send you the link.</span>
+          </div>
+        )}
         <div className="list-head">
-          <h2>{routes.length === 1 ? "1 way home" : `${routes.length} ways home`}</h2>
+          <h2>{routes.length + (metro ? 1 : 0) === 1 ? "1 way home" : `${routes.length + (metro ? 1 : 0)} ways home`}</h2>
           <span className="muted">scored for {fmtIst(result.depart)}</span>
         </div>
+        {metroMode && !metro && (
+          <div className="shared-note warn">
+            <Icon name="train" size={16} />
+            <span><b>No metro option for this trip.</b> {result.metroClosed ?? "There's no station within walking distance at both ends, or the metro isn't faster than walking."} Walking routes below.</span>
+          </div>
+        )}
         <ol className="cards">
+          {metroMode && metroCard}
           {routes.map((r) => {
             const tags = [
               r.duration === fastest && { t: "Fastest", c: "amber" },
@@ -640,23 +728,7 @@ export default function App() {
               </li>
             );
           })}
-          {metro && (
-            <li>
-              <button type="button" className={selected === metro.id ? "rcard sel" : "rcard"} onClick={() => openRoute(metro.id)}>
-                <Ring score={metro.score} label="walk parts" />
-                <span className="rc-main">
-                  <span className="rc-top"><strong>~{fmtDuration(metro.duration)}</strong><span className="muted">walk + metro</span></span>
-                  <span className="rc-why lines">
-                    {metro.ride.segments.map((sg, i) => (
-                      <span key={i} className="line-chip"><i style={{ background: sg.colour }} />{sg.line}</span>
-                    ))}
-                  </span>
-                  {metro.duration < fastest && <span className="tags"><span className="tag blue">Faster than walking</span></span>}
-                </span>
-                <Icon name="right" className="chev" />
-              </button>
-            </li>
-          )}
+          {!metroMode && metroCard}
         </ol>
         {result.metroClosed && (
           <p className="metro-closed">
@@ -735,7 +807,7 @@ export default function App() {
                 <b>{short(to)}</b>
               </span>
               <span className="chip">
-                <Icon name={mode === "walk" ? "walk" : "car"} size={15} />
+                <Icon name={metroMode ? "train" : mode === "walk" ? "walk" : "car"} size={15} />
                 {timeLabel}
                 {teen && " · Teen"}
               </span>
@@ -749,6 +821,13 @@ export default function App() {
                   Ghar Tak
                 </h1>
                 <div className="plan-actions">
+                  <button
+                    type="button" className="persona-chip" onClick={() => setAskPersona(true)}
+                    aria-label={`Using Ghar Tak as: ${PERSONAS.find((x) => x.id === persona)?.title ?? "not set"}. Change`}
+                    title="Who's using Ghar Tak?"
+                  >
+                    <span aria-hidden>{PERSONAS.find((x) => x.id === persona)?.emoji ?? "👤"}</span>
+                  </button>
                   <InstallApp />
                   <ThemeToggle />
                   <button type="button" className="icon-btn" aria-label="How Ghar Tak works" onClick={() => setAbout(true)}>
@@ -788,15 +867,22 @@ export default function App() {
               )}
               <div className="plan-opts">
                 <div className="seg" role="radiogroup" aria-label="Travel mode">
-                  {(["walk", "drive"] as const).map((m) => (
-                    <button
-                      key={m} type="button" role="radio" aria-checked={mode === m}
-                      className={mode === m ? "on" : ""} onClick={() => setMode(m)}
-                    >
-                      <Icon name={m === "walk" ? "walk" : "car"} size={16} />
-                      {m === "walk" ? "Walk" : "Cab"}
-                    </button>
-                  ))}
+                  {(["walk", "metro", "drive"] as const).map((m) => {
+                    const on = m === "metro" ? metroMode : !metroMode && mode === m;
+                    return (
+                      <button
+                        key={m} type="button" role="radio" aria-checked={on} className={on ? "on" : ""}
+                        onClick={() => {
+                          setMetroMode(m === "metro");
+                          setMode(m === "drive" ? "drive" : "walk");
+                          if (m === "metro" && result?.metro) setSelected(result.metro.id);
+                        }}
+                      >
+                        <Icon name={m === "walk" ? "walk" : m === "metro" ? "train" : "car"} size={16} />
+                        {m === "walk" ? "Walk" : m === "metro" ? "Metro" : "Cab"}
+                      </button>
+                    );
+                  })}
                 </div>
                 <button
                   type="button" className={preset !== "now" || timeOpen ? "chip on" : "chip"}
@@ -917,6 +1003,7 @@ export default function App() {
         )}
       </div>
       <SosButton />
+      {askPersona && <Onboarding splash={!persona} current={persona ?? null} onPick={pickPersona} />}
     </div>
   );
 }

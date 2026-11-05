@@ -26,6 +26,16 @@ open places instead of 6"), and you decide.
   route, ETA and current location written; you press send. For several WhatsApp chats, use Share… → WhatsApp.
 - **Teen mode:** stricter ranking (open places and short empty stretches count more), late-night and quiet-stretch
   warnings, guardian sharing and Childline 1098 on every route.
+- **Metro mode:** Walk / Metro / Cab. Metro puts the walk + metro option first; **Start metro trip** follows the
+  ride station by station. Underground, where GPS drops out, Ghar Tak uses the phone's network location (cell
+  towers and Wi-Fi, through the browser) and otherwise estimates the station from the metro timetable, and it
+  pauses "stopped" and "off route" check-ins on the platform and train. Browsers cannot read cell towers
+  directly; that needs a native app.
+- **Who's using it:** on first visit a short intro asks Me / Teen / Parent / Elder, saved only in the browser and
+  changeable from the chip in the trip card. Teen turns on teen mode; Parent explains how to follow a family
+  member's live link; Elder shows bigger text and fewer controls and starts in cab mode.
+- **Shared links are labelled:** a shared route opens with a note that it is a plan, not live location. The live
+  page (`/t/…`) says "Live" only while updates arrive, otherwise "Last update N min ago".
 - **Walk + metro** across Delhi Metro, the Aqua Line, Rapid Metro Gurgaon and the RRTS, with both walking parts
   scored. It is only offered when the whole ride fits in the network's hours; otherwise the app says why.
   There are no train times (see Known limits).

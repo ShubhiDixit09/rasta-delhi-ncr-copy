@@ -24,11 +24,13 @@ export interface LivePos {
   lat: number;
   acc: number;
   at: string;
+  /** Where the position came from: gps, network (cell towers / Wi-Fi) or estimate (metro timetable). */
+  src?: "gps" | "network" | "estimate";
 }
 
 export interface LiveTrip {
   name: string;
-  mode: "walk" | "drive";
+  mode: "walk" | "drive" | "metro";
   from: string;
   to: string;
   /** The planned route, [lon, lat] rounded to 5 decimals. */
@@ -105,7 +107,7 @@ export async function createLive(body: Record<string, unknown>): Promise<{ id: s
   const key = token(24);
   await save(id, {
     name: text(body.name, 40),
-    mode: body.mode === "drive" ? "drive" : "walk",
+    mode: body.mode === "drive" ? "drive" : body.mode === "metro" ? "metro" : "walk",
     from: text(body.from, 120),
     to: text(body.to, 120),
     route: pts,
@@ -140,7 +142,8 @@ export async function updateLive(id: string, body: Record<string, unknown>): Pro
   const p = body.pos as Record<string, unknown> | undefined;
   if (p && inNcr(p.lon, p.lat) && num(p.acc, 0, 5000)) {
     const at = iso(p.at) ?? now.toISOString();
-    rec.pos = { lon: Math.round((p.lon as number) * 1e5) / 1e5, lat: Math.round((p.lat as number) * 1e5) / 1e5, acc: Math.round(p.acc as number), at };
+    const src = p.src === "network" || p.src === "estimate" ? p.src : "gps";
+    rec.pos = { lon: Math.round((p.lon as number) * 1e5) / 1e5, lat: Math.round((p.lat as number) * 1e5) / 1e5, acc: Math.round(p.acc as number), at, src };
     rec.trail.push([rec.pos.lon, rec.pos.lat, Date.parse(at)]);
     if (rec.trail.length > MAX_TRAIL) rec.trail = rec.trail.slice(-MAX_TRAIL);
   }

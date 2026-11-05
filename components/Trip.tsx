@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Contact, loadContacts, saveContacts, sendToContacts } from "@/lib/contacts";
 import type { Mode } from "@/lib/routing";
+import type { MetroOption } from "@/lib/metro";
 import type { ScoredRoute } from "@/lib/score";
 import { type Check, TripWatcher, ahead, makeTrack } from "@/lib/tripWatch";
 import { HelplineList } from "./Emergency";
@@ -27,6 +28,92 @@ export interface TripSession {
   name: string;
   startedAt: number;
   live: { id: string; key: string; url: string } | null;
+  /** Present for walk + metro trips: where the ride sits on the route and its stations. */
+  metro?: MetroPlan;
+}
+
+export interface MetroPlan {
+  line: string;
+  colour: string;
+  boardAlong: number;
+  alightAlong: number;
+  /** Seconds from starting the trip to reaching the boarding station, and the wait for a train. */
+  walkS: number;
+  waitS: number;
+  /** Each station: distance along the whole route, and seconds after the train leaves. */
+  stations: { name: string; along: number; t: number; line: string; colour: string }[];
+}
+
+type Src = "gps" | "network" | "estimate";
+
+const segLen = (c: [number, number][]) => {
+  let d = 0;
+  for (let i = 1; i < c.length; i++) d += Math.hypot((c[i][0] - c[i - 1][0]) * 97_900, (c[i][1] - c[i - 1][1]) * 110_950);
+  return d;
+};
+
+/**
+ * A walk + metro option as one trip: the walk to the station, the ride along the stations, and the
+ * walk from the station, joined into a single path so progress, ETA and the live link all work.
+ */
+export function metroTrip(m: MetroOption): { route: ScoredRoute; metro: MetroPlan } {
+  const [l1, l2] = m.legs;
+  const ride: [number, number][] = m.ride.segments.flatMap((sg) => sg.coords as [number, number][]);
+  const coords = [...(l1.coords as [number, number][]), ...ride, ...(l2.coords as [number, number][])];
+  const boardAlong = segLen(l1.coords as [number, number][]);
+  const stations: MetroPlan["stations"] = [];
+  let along = boardAlong, prev: [number, number] | null = null;
+  for (const sg of m.ride.segments) {
+    for (const st of sg.stations) {
+      if (prev) along += segLen([prev, st.at as [number, number]]);
+      prev = st.at as [number, number];
+      if (stations.length && stations[stations.length - 1].name === st.name) continue;
+      stations.push({ name: st.name, along, t: st.t, line: sg.line, colour: sg.colour });
+    }
+  }
+  const alightAlong = along;
+  const distance = alightAlong + segLen(l2.coords as [number, number][]);
+  const shift = (gs: ScoredRoute["gaps"], d: number) => gs.map((g) => ({ ...g, startAt: g.startAt + d }));
+  const help = (hs: ScoredRoute["emergency"], d: number) => hs.map((h) => ({ ...h, at: h.at + d }));
+  const route: ScoredRoute = {
+    ...l1, id: m.id, coords, distance, duration: m.duration, score: m.score,
+    via: `${m.board.station} → ${m.alight.station}`,
+    gaps: [...shift(l1.gaps, 0), ...shift(l2.gaps, alightAlong)],
+    emergency: [...help(l1.emergency, 0), ...help(l2.emergency, alightAlong)],
+  };
+  return {
+    route,
+    metro: {
+      line: m.ride.segments[0]?.line ?? "Metro", colour: m.ride.segments[0]?.colour ?? "#888",
+      boardAlong, alightAlong, walkS: Math.round(l1.duration), waitS: m.assumptions.waitMin * 60, stations,
+    },
+  };
+}
+
+/** Where a metro ride probably is, from the time since the person reached the boarding station. */
+export function rideEstimate(plan: MetroPlan, sinceBoardS: number) {
+  const t = Math.max(0, sinceBoardS - Math.min(plan.waitS, 240));
+  const st = plan.stations;
+  let i = st.findIndex((s) => s.t > t);
+  if (i === -1) return { along: plan.alightAlong, next: null as MetroPlan["stations"][number] | null, nextInS: 0, index: st.length - 1 };
+  if (i === 0) return { along: plan.boardAlong, next: st[0], nextInS: Math.max(0, st[0].t - t), index: 0 };
+  const a = st[i - 1], b = st[i];
+  const k = (t - a.t) / Math.max(1, b.t - a.t);
+  return { along: a.along + (b.along - a.along) * k, next: b, nextInS: Math.round(b.t - t), index: i };
+}
+
+/** The point at a distance along a path. */
+function pointAt(coords: [number, number][], d: number): [number, number] {
+  let acc = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const l = segLen([coords[i - 1], coords[i]]);
+    if (acc + l >= d) {
+      const k = l ? (d - acc) / l : 0;
+      return [coords[i - 1][0] + k * (coords[i][0] - coords[i - 1][0]), coords[i - 1][1] + k * (coords[i][1] - coords[i - 1][1])];
+    }
+    acc += l;
+  }
+  return coords[coords.length - 1];
 }
 
 const STORE = "ghartak-trip";
@@ -72,9 +159,10 @@ async function liveUpdate(s: TripSession, body: Record<string, unknown>) {
 
 /* ------------------------------------------------------------------ start */
 
-export function TripStart({ route, mode, from, to, onStart, onCancel }: {
+export function TripStart({ route, mode, from, to, metro, onStart, onCancel }: {
   route: ScoredRoute;
   mode: Mode;
+  metro?: MetroPlan;
   from: string;
   to: string;
   onStart: (s: TripSession) => void;
@@ -123,7 +211,7 @@ export function TripStart({ route, mode, from, to, onStart, onCancel }: {
         const r = await fetch("/api/live", {
           method: "POST", headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            name: name.trim(), mode, from, to, route: route.coords, distance: route.distance, eta: new Date(eta).toISOString(),
+            name: name.trim(), mode: metro ? "metro" : mode, from, to, route: route.coords, distance: route.distance, eta: new Date(eta).toISOString(),
           }),
         });
         const b = await r.json();
@@ -132,13 +220,13 @@ export function TripStart({ route, mode, from, to, onStart, onCancel }: {
         // carry on without a live link
       }
     }
-    const session: TripSession = { route, mode, from, to, name: name.trim(), startedAt, live };
+    const session: TripSession = { route, mode, from, to, name: name.trim(), startedAt, live, metro };
     saveTrip(session);
     onStart(session);
     setBusy(null);
     if (share && contacts.length) {
       const who = name.trim() ? `${name.trim()} here. ` : "";
-      const how = mode === "walk" ? "walking" : "by cab";
+      const how = metro ? `by metro (${metro.line})` : mode === "walk" ? "walking" : "by cab";
       const msg =
         `${who}I'm heading from ${from} to ${to} (${how}, about ${fmtDuration(route.duration)}, should reach around ${clock(eta)}).` +
         (live
@@ -271,7 +359,14 @@ export function TripPanel({ session, onPosition, onEnd }: {
   const lastSent = useRef(0);
   const lastEval = useRef(0);
   const lastBuzz = useRef(0);
-  const latest = useRef<{ lon: number; lat: number; acc: number; t: number } | null>(null);
+  const latest = useRef<{ lon: number; lat: number; acc: number; t: number; src: Src } | null>(null);
+  const lastReal = useRef(0); // time of the last usable GPS/network fix
+  const boardedAt = useRef<number | null>(null);
+  const [src, setSrc] = useState<Src>("gps");
+  const plan = session.metro;
+  const alongNow = fix ? route.distance - fix.remaining : 0;
+  // From reaching the boarding station until near the exit station: waiting, stops and speed are normal.
+  const onRide = Boolean(plan && boardedAt.current !== null && alongNow < plan.alightAlong - 150);
 
   useWakeLock(!arrived);
 
@@ -280,7 +375,7 @@ export function TripPanel({ session, onPosition, onEnd }: {
       const p = latest.current;
       lastSent.current = Date.now();
       const ok = await liveUpdate(session, {
-        ...(p ? { pos: { lon: p.lon, lat: p.lat, acc: p.acc, at: new Date(p.t).toISOString() } } : {}),
+        ...(p ? { pos: { lon: p.lon, lat: p.lat, acc: p.acc, at: new Date(p.t).toISOString(), src: p.src } } : {}),
         along: watcher.remaining() >= 0 ? route.distance - watcher.remaining() : 0,
         eta: new Date(watcher.eta(Date.now())).toISOString(),
         ...extra,
@@ -296,26 +391,58 @@ export function TripPanel({ session, onPosition, onEnd }: {
       setGpsError("This browser can't share your location.");
       return;
     }
-    const onFix = (pos: GeolocationPosition) => {
-      const f = { lon: pos.coords.longitude, lat: pos.coords.latitude, acc: pos.coords.accuracy, t: Date.now() };
+    const take = (lon: number, lat: number, acc: number, from: Src) => {
+      const f = { lon, lat, acc, t: Date.now(), src: from };
       latest.current = f;
       const r = watcher.add(f);
       setFix({ ...r, acc: f.acc, t: f.t });
-      setGpsError(null);
-      onPosition({ lon: f.lon, lat: f.lat, acc: f.acc });
+      setSrc(from);
+      onPosition({ lon, lat, acc });
+      if (session.metro && boardedAt.current === null && r.along >= session.metro.boardAlong - 150) boardedAt.current = f.t;
       if (r.arrived) setArrived(true);
       if (Date.now() - lastSent.current > LIVE_EVERY_MS) push();
     };
+    const onFix = (pos: GeolocationPosition, from: Src = "gps") => {
+      // A weak fix never replaces a much better recent one.
+      const prev = latest.current;
+      if (prev && prev.src !== "estimate" && Date.now() - prev.t < 20_000 && pos.coords.accuracy > prev.acc * 4) return;
+      lastReal.current = Date.now();
+      setGpsError(null);
+      take(pos.coords.longitude, pos.coords.latitude, pos.coords.accuracy, from === "gps" && pos.coords.accuracy > 150 ? "network" : from);
+    };
     const onError = (e: GeolocationPositionError) =>
-      setGpsError(e.code === e.PERMISSION_DENIED ? "Location permission was turned off." : "Can't get your location right now.");
+      setGpsError(e.code === e.PERMISSION_DENIED ? "Location permission was turned off." : null);
     const opts = { enableHighAccuracy: true, maximumAge: 5000, timeout: 30_000 };
-    const id = navigator.geolocation.watchPosition(onFix, onError, opts);
-    // Phones often send nothing while you stand still, so also ask every 20 s: that is how a stop
-    // shows up, and a failed request is how lost signal does.
-    const poll = setInterval(() => navigator.geolocation.getCurrentPosition(onFix, onError, { ...opts, maximumAge: 0 }), 20_000);
+    const id = navigator.geolocation.watchPosition((p) => onFix(p), onError, opts);
+    // Phones often send nothing while you stand still, so also ask every 20 s. When GPS has gone quiet
+    // (underground, indoors), ask for the phone's network location instead: cell towers and Wi-Fi.
+    const poll = setInterval(() => {
+      const quiet = Date.now() - lastReal.current > 25_000;
+      navigator.geolocation.getCurrentPosition(
+        (p) => onFix(p, quiet ? "network" : "gps"), onError,
+        quiet ? { enableHighAccuracy: false, maximumAge: 30_000, timeout: 15_000 } : { ...opts, maximumAge: 0 },
+      );
+      // On a metro ride with no usable fix, place the person along the line from the timetable.
+      const plan = session.metro;
+      if (plan && boardedAt.current !== null && Date.now() - lastReal.current > 40_000) {
+        const est = rideEstimate(plan, (Date.now() - boardedAt.current) / 1000);
+        if (est.along < plan.alightAlong) {
+          const [lon, lat] = pointAt(route.coords as [number, number][], est.along);
+          take(lon, lat, 250, "estimate");
+        }
+      }
+    }, 20_000);
+    // Phones pause websites in the background: send the latest position as the app is left, and a
+    // fresh one as soon as it is back, so contacts never see an old position as if it were live.
+    const onVis = () => {
+      if (document.visibilityState === "hidden") push({ reason: null });
+      else navigator.geolocation.getCurrentPosition((p) => { onFix(p); push(); }, onError, { ...opts, maximumAge: 0 });
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       navigator.geolocation.clearWatch(id);
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVis);
       onPosition(null);
     };
   }, [watcher, push, onPosition]);
@@ -338,7 +465,7 @@ export function TripPanel({ session, onPosition, onEnd }: {
     }
     if (now - lastEval.current >= 5000) {
       lastEval.current = now;
-      const c = watcher.evaluate(now);
+      const c = watcher.evaluate(now, onRide ? ["off", "stopped", "vehicle"] : []);
       if (c) {
         setCheck({ ...c, since: now });
         navigator.vibrate?.([400, 150, 400]);
@@ -415,7 +542,10 @@ export function TripPanel({ session, onPosition, onEnd }: {
   const next = !fix ? null
     : offRoute ? { tone: "warn" as const, text: `You're about ${fmtDistance(fix.off)} from your route.`, phone: null }
     : ahead(route.distance - remaining, route.gaps, route.emergency);
-  const status = gpsError || stale ? { tone: "warn", text: gpsError ?? "Waiting for GPS…" }
+  const ride = plan && onRide && boardedAt.current !== null ? rideEstimate(plan, (now - boardedAt.current) / 1000) : null;
+  const srcLabel = src === "estimate" ? "Estimated from metro timetable"
+    : src === "network" ? `Network location ±${fmtDistance(fix?.acc ?? 0)}` : fix ? `GPS ±${Math.round(fix.acc)} m` : "Finding you…";
+    const status = gpsError || stale ? { tone: "warn", text: gpsError ?? "Waiting for GPS…" }
     : offRoute ? { tone: "warn", text: "Off your route" } : { tone: "good", text: "On your route" };
 
   if (arrived) {
@@ -461,6 +591,36 @@ export function TripPanel({ session, onPosition, onEnd }: {
         <i style={{ width: `${done * 100}%` }} />
       </div>
       <p className="muted small trip-to">To {session.to}</p>
+
+      <p className={`loc-src ${src}`}><i />{srcLabel}</p>
+
+      {plan && ride && (
+        <div className="metro-live">
+          <div className="ml-head">
+            <span className="line-chip"><i style={{ background: plan.colour }} />{plan.line}</span>
+            <span className="muted">On the metro</span>
+          </div>
+          {ride.next ? (
+            <p><b>Next: {ride.next.name}</b> · ~{Math.max(1, Math.round(ride.nextInS / 60))} min</p>
+          ) : (
+            <p><b>Arriving at {plan.stations[plan.stations.length - 1].name}</b></p>
+          )}
+          <ol className="ml-stations">
+            {plan.stations.map((st, i) => (
+              <li key={st.name + i} className={i < ride.index ? "done" : i === ride.index ? "now" : ""}>
+                <i style={{ background: st.colour }} />{st.name}
+              </li>
+            ))}
+          </ol>
+          <p className="small muted">Underground, GPS drops out: Ghar Tak estimates your station from the timetable. Listen to the announcements to confirm.</p>
+        </div>
+      )}
+      {plan && !ride && boardedAt.current === null && (
+        <div className="ahead info">
+          <Icon name="train" size={16} />
+          <span>Walk to <b>{plan.stations[0]?.name}</b>, then {plan.line} to <b>{plan.stations[plan.stations.length - 1]?.name}</b>.</span>
+        </div>
+      )}
 
       {next && (
         <div className={`ahead ${next.tone}`}>

@@ -170,6 +170,8 @@ export interface RideSegment {
   to: string;
   stops: number;
   coords: LngLat[];
+  /** Every station on this ride, in order, with the estimated seconds after boarding the train. */
+  stations: { name: string; at: LngLat; t: number }[];
 }
 
 export interface MetroOption {
@@ -256,21 +258,23 @@ export async function planMetro(
   let rideS = 0;
   for (let i = 0; i < path.length; i++) {
     const nd = g.nodes[path[i]];
+    if (i > 0) {
+      const edge = g.adj[path[i - 1]].find(([v]) => v === path[i]);
+      if (edge) rideS += edge[1];
+    }
     const line: MetroLine = ds.metro.lines[nd.line];
     const last = segments[segments.length - 1];
+    const station = { name: nd.name, at: [nd.lon, nd.lat] as LngLat, t: Math.round(rideS) };
     if (!last || i === 0 || g.nodes[path[i - 1]].line !== nd.line) {
       segments.push({
         line: line.name.replace(/\s*\(.*\)$/, "").replace(/:.*$/, ""), ref: line.ref, colour: line.colour,
-        operator: line.operator, from: nd.name, to: nd.name, stops: 0, coords: [[nd.lon, nd.lat]],
+        operator: line.operator, from: nd.name, to: nd.name, stops: 0, coords: [[nd.lon, nd.lat]], stations: [station],
       });
     } else {
       last.to = nd.name;
       last.stops++;
       last.coords.push([nd.lon, nd.lat]);
-    }
-    if (i > 0) {
-      const edge = g.adj[path[i - 1]].find(([v]) => v === path[i]);
-      if (edge) rideS += edge[1];
+      last.stations.push(station);
     }
   }
   const rideSegments = segments.filter((s) => s.stops > 0);
