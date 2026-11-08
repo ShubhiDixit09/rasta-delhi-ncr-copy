@@ -226,6 +226,7 @@ export default function App() {
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [about, setAbout] = useState(false);
   const [teen, setTeen] = usePref<boolean>("ghartak-teen", false);
   const [hidden, setHidden] = usePref<string[]>("ghartak-hidden-kinds", []);
@@ -352,7 +353,7 @@ export default function App() {
         setLoading(false);
       });
     return () => ac.abort();
-  }, [from, to, mode, depart, teen]);
+  }, [from, to, mode, depart, teen, reloadNonce]);
 
   // The departure-time chart: same routes, scored across the evening. Fetched after the routes
   // so the cards never wait on it.
@@ -658,7 +659,20 @@ export default function App() {
       </div>
     );
   } else if (error) {
-    body = <div className="view"><div className="error">{error}</div></div>;
+    body = (
+      <div className="view">
+        <div className="error-banner">
+          <Icon name="alert" size={20} className="error-icon" />
+          <div className="error-msg">
+            <p>{error}</p>
+            <button type="button" className="retry-btn" onClick={() => setReloadNonce((n) => n + 1)}>
+              <Icon name="swap" size={13} />
+              {t("Try again")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   } else if (result && detail && selRoute) {
     const r = selRoute;
     body = (
