@@ -160,10 +160,8 @@ export async function candidates(
 ): Promise<Candidate[]> {
   const primary = (await osrm(mode, [from, to], true)).map((r) => toCandidate(r, "osrm"));
   if (!primary.length) return [];
-  if (primary.length >= max) return primary.slice(0, max);
-  const needed = max - primary.length;
   const detours = await Promise.allSettled(
-    viaPoints(from, to, mode, snap).slice(0, needed).map((v) => osrm(mode, [from, v, to], false)),
+    viaPoints(from, to, mode, snap).map((v) => osrm(mode, [from, v, to], false)),
   );
   const pool = [...primary];
   for (const d of detours) {
