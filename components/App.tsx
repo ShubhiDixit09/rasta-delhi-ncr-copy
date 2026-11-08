@@ -1059,6 +1059,7 @@ export default function App() {
       </div>
 
       <div className="map-tools">
+        <ThemeToggle className="fab theme-fab" iconOnly />
         <button
           type="button" className={layersOpen ? "fab on" : "fab"} aria-label="Map layers" aria-expanded={layersOpen}
           onClick={() => setLayersOpen(!layersOpen)}

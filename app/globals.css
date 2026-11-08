@@ -178,14 +178,16 @@ a:hover {
   cursor: pointer;
   box-shadow: var(--glass-bevel);
   transition: all 0.15s ease;
+  flex: none;
 }
 .theme-toggle:hover {
   background: var(--raise-2);
   border-color: var(--line-strong);
+  color: var(--text);
 }
 .theme-toggle svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .install-btn {
@@ -765,6 +767,20 @@ dialog.contacts::backdrop {
   align-items: center;
   gap: 6px;
   position: relative;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .theme-toggle .theme-toggle-label {
+    display: none;
+  }
+  .theme-toggle {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    justify-content: center;
+  }
 }
 
 .persona-chip {
@@ -2124,6 +2140,9 @@ dialog.sos-sheet::backdrop {
   right: 12px;
   top: calc(var(--plan-b) + 64px);
   z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .fab {
   width: 42px;
@@ -2143,6 +2162,10 @@ dialog.sos-sheet::backdrop {
   color: var(--accent);
   border-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
+}
+.fab.theme-fab svg {
+  width: 19px;
+  height: 19px;
 }
 
 .layers {
