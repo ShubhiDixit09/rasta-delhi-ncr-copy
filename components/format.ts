@@ -40,6 +40,15 @@ export const COMPONENT_LABEL: Record<Component, { label: string; help: string }>
 };
 
 /** CSS colour for a score, from the theme's --good / --mid / --bad tokens. */
+/** User-friendly safety status label. */
+export function scoreRating(score: number | null): string {
+  if (score === null) return t("Not scored");
+  if (score >= 75) return t("High safety");
+  if (score >= 60) return t("Moderate safety");
+  if (score >= 45) return t("Caution advised");
+  return t("Quiet / Low lit");
+}
+
 export function scoreColor(score: number | null): string {
   if (score === null) return "var(--muted)";
   if (score >= 65) return "var(--good)";
