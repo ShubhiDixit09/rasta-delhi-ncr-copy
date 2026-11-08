@@ -32,8 +32,8 @@
   --on-accent: #0f172a;
   --accent-glow: rgba(245, 158, 11, 0.22);
   
-  --pin-a: #f8fafc;
-  --pin-ring: #0b1018;
+  --pin-a: #e8eaed;
+  --pin-ring: #0e1116;
   --map-bg: #090d14;
   --overlay: rgba(20, 28, 40, 0.92);
   --shadow: rgba(0, 0, 0, 0.45);
@@ -302,7 +302,7 @@ a:hover {
   color: var(--text);
 }
 
-/* Start/End Node Icons */
+/* Start/End Node Icons - Authentic Ghar Tak high-contrast markers */
 .dot,
 .pin {
   display: inline-grid;
@@ -310,32 +310,33 @@ a:hover {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--on-accent);
   flex: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .dot-A,
 .pin-from {
-  background: #10b981;
-  color: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: var(--pin-a);
+  color: var(--pin-ring);
+  border: 2px solid var(--pin-ring);
 }
 
 .dot-B,
 .pin-to {
-  background: #f59e0b;
-  color: #090c10;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 2px solid var(--pin-ring);
 }
 
 .pin {
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--pin-ring);
-  box-shadow: 0 4px 12px var(--shadow);
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid var(--pin-ring);
+  box-shadow: 0 2px 8px var(--shadow);
   cursor: grab;
+  z-index: 5;
 }
 
 /* Autocomplete suggestions popover */
@@ -2944,3 +2945,265 @@ dialog.sos-sheet::backdrop {
     display: none;
   }
 }
+
+
+/* ==========================================================================
+   Executive Light Theme Precision Styling (Tier-1 Architectural Finish)
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --raise: #ffffff;
+  --raise-2: #f1f5f9;
+  --line: rgba(15, 23, 42, 0.09);
+  --line-strong: rgba(15, 23, 42, 0.18);
+  --text: #0f172a;
+  --text-2: #334155;
+  --muted: #64748b;
+  --placeholder: #94a3b8;
+  --hover: rgba(15, 23, 42, 0.04);
+  --chip-on: #ffffff;
+  
+  --accent: #d97706;
+  --accent-fill: #f59e0b;
+  --on-accent: #ffffff;
+  --accent-glow: rgba(217, 119, 6, 0.15);
+  
+  --pin-a: #0f172a;
+  --pin-ring: #ffffff;
+  --map-bg: #f8fafc;
+  --overlay: rgba(255, 255, 255, 0.92);
+  --shadow: rgba(15, 23, 42, 0.06);
+}
+
+/* Light Theme Route Cards */
+:root[data-theme="light"] .rcard {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.11) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="light"] .rcard:hover {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.22) !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .rcard.sel {
+  background: #ffffff !important;
+  border: 1.5px solid #d97706 !important;
+  box-shadow: 0 0 0 1px #d97706, 0 8px 24px -4px rgba(217, 119, 6, 0.16) !important;
+}
+
+:root[data-theme="light"] .ring::before {
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .rcard.sel .ring::before {
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .ring b,
+:root[data-theme="light"] .ring-score {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+:root[data-theme="light"] .ring-label {
+  color: #64748b !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.03em !important;
+}
+
+:root[data-theme="light"] .rc-duration {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+:root[data-theme="light"] .rc-dist-badge {
+  color: #475569 !important;
+  font-weight: 600;
+}
+
+/* Light Theme Badges - Rich, High-Contrast & Legible */
+:root[data-theme="light"] .rc-badge {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-weight: 700;
+}
+
+:root[data-theme="light"] .rc-badge.amber {
+  background: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+:root[data-theme="light"] .rc-badge.good {
+  background: #dcfce7 !important;
+  border-color: #bbf7d0 !important;
+  color: #166534 !important;
+}
+
+:root[data-theme="light"] .rc-badge.blue {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+/* Light Theme Telemetry Row */
+:root[data-theme="light"] .rc-telemetry-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+:root[data-theme="light"] .rc-stat {
+  color: #334155 !important;
+}
+
+:root[data-theme="light"] .rc-stat .stat-num {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+:root[data-theme="light"] .rc-stat .stat-unit {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .rc-stat .stat-ico {
+  color: #64748b !important;
+}
+
+:root[data-theme="light"] .rc-stat.rc-stat-quiet .stat-ico {
+  color: #d97706 !important;
+}
+
+:root[data-theme="light"] .rc-stat.rc-stat-quiet .stat-num {
+  color: #b45309 !important;
+}
+
+:root[data-theme="light"] .rc-stat.rc-stat-quiet .stat-unit {
+  color: #92400e !important;
+}
+
+:root[data-theme="light"] .rc-stat-sep {
+  background: #cbd5e1 !important;
+}
+
+/* Light Theme Segmented Travel Modes */
+:root[data-theme="light"] .seg {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="light"] .seg button {
+  color: #64748b !important;
+  font-weight: 650;
+}
+
+:root[data-theme="light"] .seg button:hover:not(.on) {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+}
+
+:root[data-theme="light"] .seg button.on {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 750 !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Light Theme Filter Chips */
+:root[data-theme="light"] .chip,
+:root[data-theme="light"] .chips input {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="light"] .chip:hover {
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .chip.on,
+:root[data-theme="light"] .chips input.on {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Light Theme Header & Install Button */
+:root[data-theme="light"] .install-btn {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important;
+}
+
+:root[data-theme="light"] .install-btn:hover {
+  background: #1e293b !important;
+}
+
+:root[data-theme="light"] .icon-btn {
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+:root[data-theme="light"] .icon-btn:hover {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+
+/* Light Theme Search Inputs */
+:root[data-theme="light"] .plan-fields .search input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+:root[data-theme="light"] .plan-fields .search input:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+}
+
+:root[data-theme="light"] .swap-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+:root[data-theme="light"] .swap-btn:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Light Theme Panels */
+:root[data-theme="light"] .plan {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="light"] .sheet,
+:root[data-theme="light"] .dock {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 12px 36px -4px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="light"] .cards-head h2 {
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .cards-head .muted {
+  color: #64748b !important;
+}
+
