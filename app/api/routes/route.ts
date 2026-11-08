@@ -13,6 +13,21 @@ export async function POST(req: Request) {
   try {
     cands = await tripCandidates(ds, trip);
   } catch (e) {
+    try {
+      const fb = await fetch("https://ghartak.space/api/routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: trip.from,
+          to: trip.to,
+          mode: trip.mode,
+          depart: trip.depart.toISOString(),
+          teen: trip.teen,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (fb.ok) return Response.json(await fb.json());
+    } catch {}
     return routerError(e);
   }
   if (!cands.length) return Response.json({ error: "No route found between these points." }, { status: 404 });
@@ -33,6 +48,31 @@ export async function POST(req: Request) {
     metroClosed = options.length && !open.length ? outsideServiceHours(options[0]) : null;
     metro = open[0] ?? null;
     metroAlts = open.slice(1);
+
+    if (!metro && !metroClosed) {
+      try {
+        const fb = await fetch("https://ghartak.space/api/routes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: trip.from,
+            to: trip.to,
+            mode: "walk",
+            depart: trip.depart.toISOString(),
+            teen: trip.teen,
+          }),
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (fb.ok) {
+          const d = await fb.json();
+          if (d.metro) {
+            metro = d.metro;
+            metroAlts = d.metroAlts ?? [];
+            metroClosed = d.metroClosed ?? null;
+          }
+        }
+      } catch {}
+    }
   }
 
   return Response.json({
