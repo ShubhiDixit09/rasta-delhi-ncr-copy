@@ -33,19 +33,20 @@ interface OsrmRoute {
 
 /** One retry after a short pause for timeouts, network errors, 429 and 5xx from the shared router. */
 async function fetchWithRetry(url: string): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) });
-      if ((res.status === 429 || res.status >= 500) && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
+      if ((res.status === 429 || res.status >= 500) && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
         continue;
       }
       return res;
     } catch (e) {
-      if (attempt > 0) throw e;
-      await new Promise((r) => setTimeout(r, 800));
+      if (attempt >= 2) throw e;
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
     }
   }
+  throw new Error("Router connection timed out");
 }
 
 async function osrm(mode: Mode, points: LngLat[], alternatives: boolean): Promise<OsrmRoute[]> {

@@ -420,12 +420,58 @@ a:hover {
 }
 
 /* Global error / breakdown */
-.error {
+.error,
+.error-banner {
   border: 1px solid var(--error-line);
   color: var(--error-text);
-  background: color-mix(in srgb, var(--bad) 8%, var(--panel));
-  padding: 14px;
+  background: color-mix(in srgb, var(--bad) 10%, var(--raise));
+  padding: 16px;
   border-radius: var(--radius);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.error-icon {
+  color: var(--bad);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.error-msg p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--error-text);
+}
+
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--raise-2);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.15s ease;
+}
+
+.retry-btn:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .breakdown {
