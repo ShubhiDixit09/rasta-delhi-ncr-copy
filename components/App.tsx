@@ -546,17 +546,19 @@ export default function App() {
               <Ring score={m.score} label={t("walk parts")} />
               <span className="rc-main">
                 <span className="rc-top">
-                  <strong>~{fmtDuration(m.duration)}</strong>
-                  <span className="muted">{changes === 0 ? t("direct") : t(pl(changes, "{n} change", "{n} changes"), { n: changes })}</span>
+                  <span className="rc-timing">
+                    <strong className="rc-duration">~{fmtDuration(m.duration)}</strong>
+                    <span className="rc-dist-badge">{changes === 0 ? t("direct") : t(pl(changes, "{n} change", "{n} changes"), { n: changes })}</span>
+                  </span>
+                  <span className="rc-badges">
+                    <span className={i === 0 ? "rc-badge blue" : "rc-badge"}>{label}</span>
+                    {i === 0 && m.duration < fastest && <span className="rc-badge good">{t("Faster than walking")}</span>}
+                  </span>
                 </span>
                 <span className="rc-why lines">
                   {m.ride.segments.map((sg, k) => (
                     <span key={k} className="line-chip"><i style={{ background: sg.colour }} />{sg.line.replace(/ Line$/, "")}</span>
                   ))}
-                </span>
-                <span className="tags">
-                  <span className={i === 0 ? "tag blue" : "tag"}>{label}</span>
-                  {i === 0 && m.duration < fastest && <span className="tag good">{t("Faster than walking")}</span>}
                 </span>
               </span>
               <div className="chev-wrap"><Icon name="right" className="chev" /></div>
@@ -780,42 +782,56 @@ export default function App() {
                   <Ring score={r.score} label={scoreName} />
                   <span className="rc-main">
                     <span className="rc-top">
-                      <strong className="rc-duration">{fmtDuration(r.duration)}</strong>
-                      <span className="rc-dist-badge">
-                        {r.duration > fastest + 30 ? `+${t("{m} min", { m: Math.round((r.duration - fastest) / 60) })}` : fmtDistance(r.distance)}
+                      <span className="rc-timing">
+                        <strong className="rc-duration">{fmtDuration(r.duration)}</strong>
+                        <span className="rc-dist-badge">
+                          {r.duration > fastest + 30 ? `+${t("{m} min", { m: Math.round((r.duration - fastest) / 60) })}` : fmtDistance(r.distance)}
+                        </span>
                       </span>
+                      {tags.length > 0 && (
+                        <span className="rc-badges">
+                          {tags.map((tg) => (
+                            <span key={tg.t} className={`rc-badge ${tg.c}`}>
+                              {tg.icon && <Icon name={tg.icon} size={11} />}
+                              {tg.t}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                     </span>
-                    <span className="rc-telemetry-pills">
-                      <span className="rc-pill lit" title={`${litPct}% tagged lit`}>
-                        <Icon name="bulb" size={12} />
-                        {litPct}% {t("lit")}
+                    <span className="rc-telemetry-row">
+                      <span className="rc-stat" title={`${litPct}% tagged lit`}>
+                        <Icon name="bulb" size={12} className="stat-ico" />
+                        <span className="stat-num">{litPct}%</span>
+                        <span className="stat-unit">{t("lit")}</span>
                       </span>
-                      <span className="rc-pill open" title={`${s.openPlaces} open places`}>
-                        <Icon name="store" size={12} />
-                        {t("{n} open", { n: s.openPlaces })}
+                      <span className="rc-stat-sep" />
+                      <span className="rc-stat" title={`${s.openPlaces} open places`}>
+                        <Icon name="store" size={12} className="stat-ico" />
+                        <span className="stat-num">{s.openPlaces}</span>
+                        <span className="stat-unit">{t("open")}</span>
                       </span>
                       {s.cameras > 0 && (
-                        <span className="rc-pill cam" title={`${s.cameras} mapped CCTV cameras`}>
-                          <Icon name="cam" size={12} />
-                          {s.cameras}
-                        </span>
+                        <>
+                          <span className="rc-stat-sep" />
+                          <span className="rc-stat" title={`${s.cameras} mapped CCTV cameras`}>
+                            <Icon name="cam" size={12} className="stat-ico" />
+                            <span className="stat-num">{s.cameras}</span>
+                            <span className="stat-unit">CCTV</span>
+                          </span>
+                        </>
                       )}
                       {s.longestGap >= 100 && (
-                        <span className="rc-pill gap" title={`Empty stretch: ${fmtDistance(s.longestGap)}`}>
-                          {fmtDistance(s.longestGap)} quiet
-                        </span>
+                        <>
+                          <span className="rc-stat-sep" />
+                          <span className="rc-stat rc-stat-quiet" title={`Dark or quiet stretch: ${fmtDistance(s.longestGap)}`}>
+                            <Icon name="alert" size={11} className="stat-ico" />
+                            <span className="stat-num">{fmtDistance(s.longestGap)}</span>
+                            <span className="stat-unit">quiet</span>
+                          </span>
+                        </>
                       )}
                     </span>
-                    {tags.length > 0 && (
-                      <span className="tags">
-                        {tags.map((tg) => (
-                          <span key={tg.t} className={`tag ${tg.c}`}>
-                            {tg.icon && <Icon name={tg.icon} size={12} />}
-                            {tg.t}
-                          </span>
-                        ))}
-                      </span>
-                    )}
                   </span>
                   <div className="chev-wrap">
                     <Icon name="right" className="chev" />

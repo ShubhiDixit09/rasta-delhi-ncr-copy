@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @font-face {
   font-family: Inter;
   src: url(/fonts/Inter-latin.woff2) format("woff2");
@@ -7,6 +9,9 @@
 
 :root,
 :root[data-theme="dark"] {
+  --font-sans: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
   /* Rich obsidian night palette */
   --bg: #07090e;
   --panel: #0d1219;
@@ -108,10 +113,11 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font: 14.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  letter-spacing: -0.01em;
+  font: 14px/1.55 var(--font-sans);
+  letter-spacing: -0.012em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
 }
 
 /* Sleek custom scrollbars */
@@ -1130,13 +1136,13 @@ dialog.contacts::backdrop {
   }
 }
 
-/* Route Cards - High-Tech Safety Telemetry Cards */
+/* Route Cards - Professional Night Intelligence Dashboard */
 .cards {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .rcard {
@@ -1144,25 +1150,27 @@ dialog.contacts::backdrop {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px;
-  border-radius: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
   background: var(--panel);
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--line);
   text-align: left;
   cursor: pointer;
-  box-shadow: var(--glass-bevel);
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
 }
 .rcard:hover {
   border-color: var(--line-strong);
   background: var(--raise);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
 }
 .rcard.sel {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent-fill) 8%, var(--panel));
-  box-shadow: 0 0 0 1px var(--accent), 0 12px 30px -5px var(--accent-glow);
+  border-color: rgba(245, 158, 11, 0.65);
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), 0 10px 28px -6px rgba(245, 158, 11, 0.18);
 }
 
 /* Score Ring High-Precision Gauge */
@@ -1170,7 +1178,7 @@ dialog.contacts::backdrop {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex: none;
 }
 
@@ -1178,44 +1186,49 @@ dialog.contacts::backdrop {
   --p: 0;
   --c: var(--muted);
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line-strong) 0);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
 .ring::before {
   content: "";
   position: absolute;
-  inset: 5px;
+  inset: 4.5px;
   border-radius: 50%;
   background: var(--panel);
+}
+.rcard.sel .ring::before {
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
 }
 
 .ring-glow {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  opacity: 0.15;
-  filter: blur(8px);
+  opacity: 0.12;
+  filter: blur(6px);
 }
 
 .ring b,
 .ring-score {
   position: relative;
-  font-size: 19px;
-  font-weight: 850;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  color: var(--text);
 }
 
 .ring-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
@@ -1224,100 +1237,180 @@ dialog.contacts::backdrop {
 .rc-main {
   flex: 1;
   min-width: 0;
-  display: grid;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .rc-top {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rc-timing {
+  display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
 }
 
 .rc-duration {
-  font-size: 20px;
-  font-weight: 850;
-  letter-spacing: -0.025em;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--text);
+  font-family: var(--font-sans);
 }
 
 .rc-dist-badge {
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.rc-telemetry-pills {
+/* Restrained, Executive Route Badges */
+.rc-badges {
   display: flex;
+  align-items: center;
+  gap: 5px;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
 }
 
-.rc-pill {
+.rc-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
-  padding: 3px 8px;
-  border-radius: 6px;
+  letter-spacing: 0.01em;
+  padding: 2.5px 8px;
+  border-radius: 999px;
   background: var(--raise);
   color: var(--text-2);
   border: 1px solid var(--line);
 }
-.rc-pill.lit {
-  background: color-mix(in srgb, #f59e0b 12%, var(--raise));
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.25);
-}
-.rc-pill.open {
-  background: color-mix(in srgb, #10b981 12%, var(--raise));
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.25);
-}
-.rc-pill.cam {
-  background: color-mix(in srgb, #38bdf8 12%, var(--raise));
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.25);
-}
-.rc-pill.gap {
-  background: color-mix(in srgb, #ef4444 12%, var(--raise));
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.25);
+
+.rc-badge.amber {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.24);
+  color: #fbbf24;
 }
 
+.rc-badge.good {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.24);
+  color: #34d399;
+}
+
+.rc-badge.blue {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.24);
+  color: #60a5fa;
+}
+
+/* Unified Telemetry Row - Calm, Integrated, Professional */
+.rc-telemetry-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+:root[data-theme="light"] .rc-telemetry-row {
+  background: var(--raise);
+}
+
+.rc-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.rc-stat .stat-ico {
+  color: var(--muted);
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.rc-stat .stat-num {
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.rc-stat .stat-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.rc-stat-sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex-shrink: 0;
+}
+
+.rc-stat.rc-stat-quiet .stat-ico {
+  color: #f59e0b;
+}
+
+.rc-stat.rc-stat-quiet .stat-num {
+  color: #fbbf24;
+}
+
+.rc-stat.rc-stat-quiet .stat-unit {
+  color: #d97706;
+}
+
+/* Legacy tags support for any lingering usage */
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
 }
-
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
-  font-weight: 750;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--chip-on);
+  font-size: 11px;
+  font-weight: 650;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  background: var(--raise);
   color: var(--text-2);
+  border: 1px solid var(--line);
 }
 .tag.good {
-  background: color-mix(in srgb, var(--good) 18%, transparent);
-  color: var(--good);
-  box-shadow: 0 0 10px var(--good-glow);
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.24);
 }
 .tag.amber {
-  background: color-mix(in srgb, var(--accent-fill) 18%, transparent);
-  color: var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.24);
 }
 .tag.blue {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(59, 130, 246, 0.1);
   color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.24);
 }
 
 .chev-wrap {
