@@ -461,7 +461,7 @@ export default function App() {
   const heights: Record<Snap, number> = { peek: Math.min(peekH, fullH), half: halfH, full: fullH };
   const sheetH = dragH ?? heights[snap];
   const padding = desktop
-    ? { top: 24, bottom: 24, left: 432, right: 56 }
+    ? { top: 24, bottom: 24, left: 384, right: 56 }
     : { top: planBottom, bottom: heights[snap], left: 0, right: 44 };
   const planCollapsed = (!desktop && !planOpen && Boolean(from && to)) || Boolean(session);
 
