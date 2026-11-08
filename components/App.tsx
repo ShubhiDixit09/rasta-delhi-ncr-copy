@@ -920,15 +920,15 @@ export default function App() {
             <>
               <div className="plan-head">
                 <div className="brand-group">
-                  <h1>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/icons/logo.svg" alt="" width={28} height={28} className="brand-logo" />
-                    <span>Ghar Tak</span>
-                  </h1>
-                  <span className="brand-badge">
-                    <span className="live-dot-pulse" />
-                    Delhi NCR · Night Safety
-                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/logo.svg" alt="" width={26} height={26} className="brand-logo" />
+                  <div className="brand-info">
+                    <h1 className="brand-title">Ghar Tak</h1>
+                    <span className="brand-badge">
+                      <span className="live-dot-pulse" />
+                      Delhi NCR · Night Safety
+                    </span>
+                  </div>
                 </div>
                 <div className="plan-actions">
                   <button
@@ -945,7 +945,7 @@ export default function App() {
                     {lang === "hi" ? "EN" : "हिं"}
                   </button>
                   <InstallApp />
-                  <ThemeToggle />
+                  <ThemeToggle iconOnly />
                   <button type="button" className="icon-btn" aria-label="How Ghar Tak works" onClick={() => setAbout(true)}>
                     <Icon name="info" />
                   </button>
