@@ -715,35 +715,28 @@ dialog.contacts::backdrop {
 .brand-group {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-shrink: 0;
-  min-width: max-content;
+}
+
+.brand-group h1,
+.plan-head h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 .brand-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   box-shadow: 0 2px 8px var(--accent-glow);
   flex-shrink: 0;
-}
-
-.brand-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-width: 0;
-}
-
-.brand-title,
-.plan-head h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  color: var(--text);
-  white-space: nowrap;
 }
 
 .brand-badge {
@@ -2459,7 +2452,7 @@ dialog.sos-sheet::backdrop {
 /* Desktop Command Center */
 .app.desk .dock {
   inset: 16px auto 16px 16px;
-  width: 400px;
+  width: 420px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2794,12 +2787,12 @@ dialog.sos-sheet::backdrop {
 
   /* Route Cards - Mobile Handheld Fit */
   .cards {
-    gap: 8px;
+    gap: 9px;
   }
   .rcard {
-    padding: 11px 12px;
-    border-radius: 14px;
-    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 15px;
+    gap: 11px;
   }
   .ring {
     width: 44px;

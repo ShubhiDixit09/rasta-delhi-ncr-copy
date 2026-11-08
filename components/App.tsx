@@ -461,7 +461,7 @@ export default function App() {
   const heights: Record<Snap, number> = { peek: Math.min(peekH, fullH), half: halfH, full: fullH };
   const sheetH = dragH ?? heights[snap];
   const padding = desktop
-    ? { top: 24, bottom: 24, left: 432, right: 56 }
+    ? { top: 24, bottom: 24, left: 450, right: 56 }
     : { top: planBottom, bottom: heights[snap], left: 0, right: 44 };
   const planCollapsed = (!desktop && !planOpen && Boolean(from && to)) || Boolean(session);
 
@@ -920,15 +920,11 @@ export default function App() {
             <>
               <div className="plan-head">
                 <div className="brand-group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/logo.svg" alt="" width={26} height={26} className="brand-logo" />
-                  <div className="brand-info">
-                    <h1 className="brand-title">Ghar Tak</h1>
-                    <span className="brand-badge">
-                      <span className="live-dot-pulse" />
-                      Delhi NCR · Night Safety
-                    </span>
-                  </div>
+                  <h1>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/icons/logo.svg" alt="" width={28} height={28} className="brand-logo" />
+                    <span>Ghar Tak</span>
+                  </h1>
                 </div>
                 <div className="plan-actions">
                   <button
