@@ -300,8 +300,8 @@ const STYLES: Record<Theme, string> = {
 };
 
 const OVERLAY: Record<Theme, Record<string, string>> = {
-  dark: { bus: "#2dd4bf", coverage: "#f5b942", alt: "#475569", casing: "#06080b", selected: "#fbbf24", hole: "#07090e", label: "#f1f5f9", gap: "#ef4444" },
-  light: { bus: "#0f766e", coverage: "#d97706", alt: "#94a3b8", casing: "#ffffff", selected: "#d97706", hole: "#ffffff", label: "#0f172a", gap: "#dc2626" },
+  dark: { bus: "#2dd4bf", coverage: "#f5b942", alt: "#6b7480", casing: "#0b0d10", selected: "#e8eaed", hole: "#0e1116", label: "#e8eaed", gap: "#ff4d40" },
+  light: { bus: "#0f766e", coverage: "#a85b06", alt: "#a3abb6", casing: "#ffffff", selected: "#1f2a37", hole: "#ffffff", label: "#121821", gap: "#e0362b" },
 };
 
 /** Sources and layers Ghar Tak draws on top of the basemap. setStyle() drops them, so this re-runs per style. */
