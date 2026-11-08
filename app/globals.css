@@ -2458,8 +2458,8 @@ dialog.sos-sheet::backdrop {
 
 /* Desktop Command Center */
 .app.desk .dock {
-  inset: 18px auto 18px 18px;
-  width: 360px;
+  inset: 16px auto 16px 16px;
+  width: 400px;
   display: flex;
   flex-direction: column;
   gap: 12px;
