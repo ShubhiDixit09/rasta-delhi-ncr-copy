@@ -2583,3 +2583,243 @@ dialog.sos-sheet::backdrop {
   border-color: var(--accent-fill);
   transform: translateY(-1px);
 }
+
+
+/* ==========================================================================
+   MOBILE-FIRST PHONE OPTIMIZATIONS (Screen width <= 480px)
+   Engineered for iPhone, Samsung Galaxy, and all compact mobile handhelds
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  /* Search HUD Card */
+  .plan {
+    left: 8px;
+    right: 8px;
+    top: max(8px, env(safe-area-inset-top));
+    padding: 10px 12px 12px;
+    border-radius: 18px;
+    gap: 10px;
+  }
+  .plan.collapsed {
+    padding: 4px 6px;
+    border-radius: 16px;
+  }
+
+  /* Header Brand Lockup */
+  .plan-head {
+    gap: 6px;
+  }
+  .brand-group {
+    gap: 6px;
+  }
+  .brand-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+  }
+  .brand-title,
+  .plan-head h1 {
+    font-size: 15px;
+  }
+  .brand-badge {
+    font-size: 8px;
+    letter-spacing: 0.03em;
+  }
+  .live-dot-pulse {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Compact 28px Actions with Generous 38px Tap Target */
+  .plan-actions {
+    gap: 4px;
+  }
+  .persona-chip {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .lang-chip {
+    height: 28px;
+    padding: 0 7px;
+    font-size: 10.5px;
+  }
+  .plan-head .theme-toggle {
+    width: 28px;
+    height: 28px;
+  }
+  .plan-head .theme-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+  .plan-head .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .install-btn {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+
+  /* Search Input Fields */
+  .plan-fields .search-label {
+    padding: 0 40px 0 12px;
+  }
+  .plan-fields .search input {
+    padding: 10px 0;
+    font-size: 14.5px;
+  }
+  .swap {
+    width: 30px;
+    height: 30px;
+    right: 8px;
+  }
+  .swap svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Mode Selector - Thumb Friendly */
+  .seg {
+    padding: 2.5px;
+    border-radius: 12px;
+  }
+  .seg button {
+    padding: 7px 4px;
+    font-size: 13px;
+    gap: 5px;
+  }
+  .seg button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Filter Chips */
+  .chip,
+  .chips input {
+    padding: 5px 10px;
+    font-size: 12px;
+    gap: 5px;
+  }
+
+  /* Bottom Route Sheet */
+  .sheet {
+    border-radius: 22px 22px 0 0;
+  }
+  .grab {
+    height: 24px;
+  }
+  .handle {
+    width: 36px;
+    height: 4px;
+  }
+  .sheet-body {
+    padding: 0 10px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  /* Route Cards - Mobile Handheld Fit */
+  .cards {
+    gap: 8px;
+  }
+  .rcard {
+    padding: 11px 12px;
+    border-radius: 14px;
+    gap: 10px;
+  }
+  .ring {
+    width: 44px;
+    height: 44px;
+  }
+  .ring::before {
+    inset: 4px;
+  }
+  .ring b,
+  .ring-score {
+    font-size: 16px;
+  }
+  .ring-label {
+    font-size: 8px;
+    letter-spacing: 0.03em;
+  }
+  .rc-duration {
+    font-size: 17px;
+  }
+  .rc-dist-badge {
+    font-size: 12px;
+  }
+  .rc-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  .rc-telemetry-row {
+    padding: 4px 7px;
+    gap: 6px;
+    border-radius: 7px;
+  }
+  .rc-stat {
+    font-size: 11px;
+    gap: 3px;
+  }
+  .rc-stat .stat-num {
+    font-size: 11px;
+  }
+  .rc-stat .stat-unit {
+    font-size: 9.5px;
+  }
+  .chev-wrap {
+    display: none;
+  }
+
+  /* Map Floating Tools on Mobile */
+  .map-tools {
+    right: 8px;
+    top: calc(var(--plan-b) + 10px);
+    gap: 6px;
+  }
+  .fab {
+    width: 38px;
+    height: 38px;
+  }
+  .fab svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* SOS Button on Mobile */
+  .sos {
+    left: 8px;
+    top: calc(var(--plan-b) + 10px);
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  /* Along Route Mobile 2-column tiles */
+  .along-tiles {
+    gap: 8px;
+  }
+  .along-tile {
+    padding: 10px;
+  }
+  .along-tile-value b {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Ultra-compact for budget Android devices (360px) */
+  .brand-badge {
+    display: none;
+  }
+  .brand-title,
+  .plan-head h1 {
+    font-size: 14px;
+  }
+  .rc-telemetry-row {
+    gap: 4px;
+  }
+  .rc-stat-sep {
+    display: none;
+  }
+}
