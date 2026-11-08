@@ -682,8 +682,7 @@ dialog.contacts::backdrop {
 /* Floating Glass HUD Panels */
 .plan,
 .sheet,
-.layers,
-.fab {
+.layers {
   background: var(--overlay);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -2260,7 +2259,7 @@ dialog.sos-sheet::backdrop {
   color: var(--muted);
 }
 
-/* Map Floating Controls */
+/* High-Visibility Floating Map Controls (Zoom, Locate, Theme, Layers) */
 .map-tools {
   position: absolute;
   right: 12px;
@@ -2270,40 +2269,88 @@ dialog.sos-sheet::backdrop {
   flex-direction: column;
   gap: 8px;
 }
+
 .fab {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 14px;
   display: grid;
   place-items: center;
-  color: var(--text-2);
+  background: #1e2838;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+:root[data-theme="light"] .fab {
+  background: #ffffff;
+  border: 1.5px solid rgba(15, 23, 42, 0.16);
+  color: #0f172a;
+  box-shadow: 0 8px 20px -2px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
 .fab:hover {
-  color: var(--text);
-  transform: translateY(-1px);
+  background: #2a3a50;
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 10px 28px -2px rgba(0, 0, 0, 0.75), 0 0 12px rgba(255, 255, 255, 0.12);
 }
+
+:root[data-theme="light"] .fab:hover {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.3);
+  color: #000000;
+  transform: translateY(-1px) scale(1.04);
+}
+
 .fab.on {
-  color: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 12px var(--accent-glow);
+  background: color-mix(in srgb, var(--accent) 20%, #1e2838);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.45), 0 8px 20px rgba(0, 0, 0, 0.6);
 }
+
+:root[data-theme="light"] .fab.on {
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #d97706;
+  box-shadow: 0 0 12px rgba(217, 119, 6, 0.3);
+}
+
+.fab svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.2px;
+}
+
 .fab.theme-fab svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
 .layers {
   position: absolute;
-  right: 52px;
+  right: 56px;
   top: 0;
   width: min(320px, calc(100vw - 80px));
   border-radius: 18px;
   padding: 14px;
   display: grid;
   gap: 12px;
+  background: rgba(20, 28, 40, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(24px);
 }
+:root[data-theme="light"] .layers {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
+}
+
 .layers-head {
   display: flex;
   align-items: center;
@@ -2335,23 +2382,50 @@ dialog.sos-sheet::backdrop {
   border-color: var(--line-strong);
 }
 
+/* MapLibre High-Visibility Zoom & Geolocate Controls */
 .maplibregl-ctrl-top-right {
   top: var(--plan-b);
 }
+
 .maplibregl-ctrl-group {
-  background: var(--overlay) !important;
-  border: 1px solid var(--line-strong) !important;
+  background: #1e2838 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 14px !important;
-  box-shadow: 0 14px 34px var(--shadow), var(--glass-bevel) !important;
-  backdrop-filter: blur(20px) !important;
-  overflow: hidden;
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  overflow: hidden !important;
 }
+
+:root[data-theme="light"] .maplibregl-ctrl-group {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 8px 20px -2px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
 .maplibregl-ctrl-group button {
-  width: 42px !important;
-  height: 42px !important;
+  width: 44px !important;
+  height: 44px !important;
+  background: transparent !important;
+  transition: all 0.15s ease !important;
 }
+
+.maplibregl-ctrl-group button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+:root[data-theme="light"] .maplibregl-ctrl-group button:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+:root[data-theme="light"] .maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+
 :root[data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(1) brightness(0.9);
+  filter: invert(1) brightness(1.3) contrast(1.2);
 }
 
 /* User Live Location Dot */
@@ -2773,17 +2847,25 @@ dialog.sos-sheet::backdrop {
 
   /* Map Floating Tools on Mobile */
   .map-tools {
-    right: 8px;
-    top: calc(var(--plan-b) + 10px);
-    gap: 6px;
+    right: 10px;
+    top: calc(var(--plan-b) + 12px);
+    gap: 7px;
   }
   .fab {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
   .fab svg {
-    width: 17px;
-    height: 17px;
+    width: 19px;
+    height: 19px;
+  }
+  .maplibregl-ctrl-group {
+    border-radius: 12px !important;
+  }
+  .maplibregl-ctrl-group button {
+    width: 40px !important;
+    height: 40px !important;
   }
 
   /* SOS Button on Mobile */
