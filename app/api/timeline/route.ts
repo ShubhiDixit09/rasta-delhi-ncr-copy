@@ -30,6 +30,21 @@ export async function POST(req: Request) {
   try {
     cands = await tripCandidates(ds, trip);
   } catch (e) {
+    try {
+      const fb = await fetch("https://ghartak.space/api/timeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: trip.from,
+          to: trip.to,
+          mode: trip.mode,
+          depart: trip.depart.toISOString(),
+          teen: trip.teen,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (fb.ok) return Response.json(await fb.json());
+    } catch {}
     return routerError(e);
   }
   if (!cands.length) return Response.json({ error: "No route found between these points." }, { status: 404 });

@@ -212,26 +212,19 @@ async function stationWalk(place: LngLat, station: LngLat, dir: "to" | "from"): 
   const route = (p: LngLat) => (dir === "to" ? singleRoute("walk", place, p) : singleRoute("walk", p, place));
   const straight = flatDist(place[0], place[1], station[0], station[1]);
   const direct = await route(station).catch(() => null);
-  if (direct && direct.distance <= straight * 1.8 + 400) return direct;
-  // Gentle on the shared router: four points at a time, nearest ring first, stop at the first good walk.
-  const good = (c: Candidate) => c.distance <= straight * 1.8 + 400;
+  if (direct && direct.distance <= straight * 2.2 + 500) return direct;
   let best = direct;
-  for (const r of [70, 150]) {
-    const ring: LngLat[] = [];
-    for (let k = 0; k < 8; k++) {
-      const a = (k * Math.PI) / 4;
-      ring.push([station[0] + (r * Math.sin(a)) / M_PER_DEG_LON, station[1] + (r * Math.cos(a)) / M_PER_DEG_LAT]);
-    }
-    for (let k = 0; k < ring.length; k += 4) {
-      const tries = await Promise.allSettled(ring.slice(k, k + 4).map(route));
-      for (const t of tries) {
-        if (t.status !== "fulfilled" || !t.value) continue;
-        const end = dir === "to" ? t.value.coords[t.value.coords.length - 1] : t.value.coords[0];
-        if (flatDist(end[0], end[1], station[0], station[1]) > 220) continue;
-        if (!best || t.value.duration < best.duration) best = t.value;
-      }
-      if (best && good(best)) return best;
-    }
+  // Test 4 cardinal offsets (80m) to clear railway embankments / overpasses without overloading router
+  const offsets: LngLat[] = [
+    [station[0], station[1] + 80 / M_PER_DEG_LAT],
+    [station[0], station[1] - 80 / M_PER_DEG_LAT],
+    [station[0] + 80 / M_PER_DEG_LON, station[1]],
+    [station[0] - 80 / M_PER_DEG_LON, station[1]],
+  ];
+  const tries = await Promise.allSettled(offsets.map(route));
+  for (const t of tries) {
+    if (t.status !== "fulfilled" || !t.value) continue;
+    if (!best || t.value.duration < best.duration) best = t.value;
   }
   return best;
 }

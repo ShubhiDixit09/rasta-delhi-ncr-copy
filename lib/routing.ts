@@ -31,21 +31,25 @@ interface OsrmRoute {
   legs: { summary: string }[];
 }
 
+const osrmCache = new Map<string, { at: number; data: OsrmRoute[] }>();
+const OSRM_CACHE_TTL = 30 * 60_000;
+
 /** One retry after a short pause for timeouts, network errors, 429 and 5xx from the shared router. */
 async function fetchWithRetry(url: string): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) });
-      if ((res.status === 429 || res.status >= 500) && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
+      const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(6_000) });
+      if ((res.status === 429 || res.status >= 500) && attempt < 1) {
+        await new Promise((r) => setTimeout(r, 400));
         continue;
       }
       return res;
     } catch (e) {
-      if (attempt > 0) throw e;
-      await new Promise((r) => setTimeout(r, 800));
+      if (attempt >= 1) throw e;
+      await new Promise((r) => setTimeout(r, 400));
     }
   }
+  throw new Error("Router connection timed out");
 }
 
 async function osrm(mode: Mode, points: LngLat[], alternatives: boolean): Promise<OsrmRoute[]> {
@@ -54,6 +58,13 @@ async function osrm(mode: Mode, points: LngLat[], alternatives: boolean): Promis
     `${PROFILES[mode]}/${coords}?overview=full&geometries=geojson&steps=true` +
     (alternatives ? "&alternatives=3" : "") +
     (points.length > 2 ? "&continue_straight=true" : "");
+
+  const now = Date.now();
+  const cached = osrmCache.get(url);
+  if (cached && now - cached.at < OSRM_CACHE_TTL) {
+    return cached.data;
+  }
+
   const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`router ${res.status}`);
   const body = await res.json();
@@ -61,7 +72,12 @@ async function osrm(mode: Mode, points: LngLat[], alternatives: boolean): Promis
     if (body.code === "NoRoute" || body.code === "NoSegment") return [];
     throw new Error(`router ${body.code}`);
   }
-  return body.routes as OsrmRoute[];
+  const routes = body.routes as OsrmRoute[];
+  osrmCache.set(url, { at: now, data: routes });
+  if (osrmCache.size > 500) {
+    for (const [k, v] of osrmCache) if (now - v.at >= OSRM_CACHE_TTL || osrmCache.size > 500) osrmCache.delete(k);
+  }
+  return routes;
 }
 
 function toCandidate(r: OsrmRoute, origin: Candidate["origin"]): Candidate {
