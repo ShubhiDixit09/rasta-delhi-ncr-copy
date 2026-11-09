@@ -3,7 +3,7 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 
 /** The picture shown when ghartak.space is shared on WhatsApp, X, LinkedIn and others. */
-export const alt = "Ghar Tak: the safer way home at night, for women in Delhi NCR";
+export const alt = "Ghar Tak, a women safety app for Delhi NCR: the safer way home at night";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -20,21 +20,31 @@ export default async function Image() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} width={120} height={120} alt="" style={{ borderRadius: 28 }} />
-          <div style={{ fontSize: 84, fontWeight: 800, letterSpacing: -2 }}>Ghar Tak</div>
+          <img src={src} width={104} height={104} alt="" style={{ borderRadius: 28 }} />
+          <div style={{ fontSize: 76, fontWeight: 800, letterSpacing: -2 }}>Ghar Tak</div>
         </div>
-        <div style={{ fontSize: 54, fontWeight: 700, marginTop: 44, lineHeight: 1.15, maxWidth: 1000 }}>
-          The safer way home at night, not just the fastest.
+        <div style={{ display: "flex", marginTop: 34 }}>
+          <div
+            style={{
+              fontSize: 28, color: "#f5b942", border: "2px solid #f5b942", borderRadius: 999, padding: "6px 20px",
+              letterSpacing: 2,
+            }}
+          >
+            WOMEN SAFETY APP · DELHI NCR
+          </div>
         </div>
-        <div style={{ fontSize: 30, color: "#c3c9d1", marginTop: 28 }}>
+        <div style={{ fontSize: 54, fontWeight: 700, marginTop: 26, lineHeight: 1.15, maxWidth: 1040 }}>
+          Every woman deserves the safer way home at night, not just the fastest.
+        </div>
+        <div style={{ fontSize: 30, color: "#c3c9d1", marginTop: 22 }}>
           Lit roads · open shops · metro timings · live location for family · SOS
         </div>
-        <div style={{ display: "flex", gap: 16, marginTop: 44, fontSize: 28 }}>
+        <div style={{ display: "flex", gap: 16, marginTop: 36, fontSize: 28 }}>
           <div style={{ background: "#f5b942", color: "#0e1116", padding: "10px 22px", borderRadius: 999, fontWeight: 700 }}>
             ghartak.space
           </div>
           <div style={{ border: "2px solid #4a5260", padding: "8px 22px", borderRadius: 999, color: "#e8eaed" }}>
-            Free · No login · Delhi NCR
+            Free · No login · Hindi too
           </div>
         </div>
       </div>
