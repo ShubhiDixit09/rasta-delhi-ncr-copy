@@ -68,35 +68,38 @@ export default function Share({ text, onImage }: { text: string; onImage?: () =>
   return (
     <div className="share-block">
       <div className="share-main">
-        <button type="button" className="btn" onClick={() => setOpen(!open)} aria-expanded={open}>
-          <Icon name="share" />
-          {t("Share")}
+        <button type="button" className={`btn share-toggle-btn ${open ? "on" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}>
+          <Icon name="share" size={16} />
+          <span>{t("Share Route")}</span>
         </button>
         <TrustedContacts text={text} />
       </div>
       {open && (
         <div className="share-more">
-          <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
-            WhatsApp
+          <a className="btn share-btn-wa" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
+            <span>💬 WhatsApp</span>
           </a>
           {canNativeShare && (
-            <button type="button" className="btn" onClick={() => navigator.share({ text }).catch(() => undefined)}>
-              {t("More apps…")}
+            <button type="button" className="btn share-btn-native" onClick={() => navigator.share({ text }).catch(() => undefined)}>
+              <Icon name="arrowUpRight" size={14} />
+              <span>{t("More apps…")}</span>
             </button>
           )}
-          <button type="button" className="btn" onClick={copy}>
-            {copied ? t("Copied") : t("Copy message")}
+          <button type="button" className="btn share-btn-copy" onClick={copy}>
+            <Icon name={copied ? "check" : "share"} size={14} />
+            <span>{copied ? t("Copied!") : t("Copy message")}</span>
           </button>
           {onImage && (
             <button
-              type="button" className="btn" disabled={making}
+              type="button" className="btn share-btn-img" disabled={making}
               onClick={async () => {
                 setMaking(true);
                 await onImage().catch(() => undefined);
                 setMaking(false);
               }}
             >
-              {making ? t("Making image…") : t("Route image")}
+              <Icon name="sparkles" size={14} />
+              <span>{making ? t("Making image…") : t("Route image")}</span>
             </button>
           )}
           {canNativeShare && (

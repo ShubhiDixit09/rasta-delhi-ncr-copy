@@ -5,14 +5,15 @@ import { loadContacts, sendToContacts } from "@/lib/contacts";
 import type { HelpPoint } from "@/lib/score";
 import { fmtDistance } from "./format";
 import { t } from "@/lib/i18n";
+import Icon from "./Icon";
 
 /** National and NCR helplines. All are free to call from any phone. */
 export const HELPLINES: { number: string; label: string; detail: string; primary?: boolean }[] = [
-  { number: "112", label: "Emergency", detail: "Police, fire and ambulance, all of India", primary: true },
-  { number: "1091", label: "Women helpline", detail: "Delhi Police, women in distress" },
-  { number: "181", label: "Women helpline", detail: "National, 24×7" },
-  { number: "1098", label: "Childline", detail: "Children and teens in need of help, 24×7" },
-  { number: "102", label: "Ambulance", detail: "Delhi; 108 in Haryana and Uttar Pradesh" },
+  { number: "112", label: "National Emergency", detail: "Police, fire & ambulance, all of India", primary: true },
+  { number: "1091", label: "Delhi Police Women", detail: "Special women safety cell, 24×7" },
+  { number: "181", label: "Women Helpline (National)", detail: "Toll-free 24×7 distress assistance" },
+  { number: "1098", label: "Childline India", detail: "Teens & children in need of help, 24×7" },
+  { number: "102", label: "Ambulance / Medical", detail: "Delhi (108 in UP & Haryana)" },
   { number: "1090", label: "UP Women Power Line", detail: "Noida, Greater Noida, Ghaziabad" },
 ];
 
@@ -23,10 +24,15 @@ export function HelplineList({ compact = false }: { compact?: boolean }) {
       {list.map((h) => (
         <li key={h.number} className={h.primary ? "primary" : ""}>
           <a href={`tel:${h.number}`} aria-label={`${t("Call")} ${t(h.label)}, ${h.number}`}>
-            <b>{h.number}</b>
-            <span>
-              {t(h.label)}
-              {!compact && <small>{t(h.detail)}</small>}
+            <div className="hl-badge">
+              <b>{h.number}</b>
+            </div>
+            <div className="hl-info">
+              <span className="hl-title">{t(h.label)}</span>
+              {!compact && <small className="hl-desc">{t(h.detail)}</small>}
+            </div>
+            <span className="hl-call-action" aria-hidden>
+              <Icon name="phone" size={14} />
             </span>
           </a>
         </li>
@@ -54,27 +60,68 @@ export function SosButton() {
     setStatus(t("Getting your location…"));
     const { located } = await sendToContacts(list, t("I need help. Please call me."));
     setStatus(
-      t(located ? "Opening your messages app for {n} contacts with your location. Press send there." : "Opening your messages app for {n} contacts (location not available). Press send there.", { n: list.length }),
+      t(
+        located
+          ? "Opening your messages app for {n} contacts with your location. Press send there."
+          : "Opening your messages app for {n} contacts (location not available). Press send there.",
+        { n: list.length },
+      ),
     );
   };
 
   return (
     <>
-      <button type="button" className="sos" onClick={() => { setStatus(null); dialog.current?.showModal(); }} aria-haspopup="dialog">
-        SOS
+      <button
+        type="button"
+        className="sos"
+        onClick={() => {
+          setStatus(null);
+          dialog.current?.showModal();
+        }}
+        aria-haspopup="dialog"
+      >
+        <span className="sos-pulse" aria-hidden />
+        <span className="sos-text">SOS</span>
       </button>
       <dialog ref={dialog} className="sos-sheet" aria-labelledby="sos-title">
         <form method="dialog" className="contacts-head">
-          <h2 id="sos-title">{t("Emergency")}</h2>
-          <button className="link">{t("Close")}</button>
+          <div className="sos-header-left">
+            <span className="sos-shield-icon" aria-hidden>
+              <Icon name="alert" size={20} />
+            </span>
+            <div>
+              <h2 id="sos-title">{t("Emergency Response")}</h2>
+              <span className="sos-subtitle">{t("Direct police, ambulance & women helplines")}</span>
+            </div>
+          </div>
+          <button className="link sos-close" aria-label="Close dialog">{t("Close")}</button>
         </form>
-        <a className="sos-call" href="tel:112">{t("Call 112")}</a>
-        <button type="button" className="btn sos-alert" onClick={alertContacts}>
-          {t("Message my trusted contacts with my location")}
-        </button>
+
+        <div className="sos-hero-card">
+          <a className="sos-call" href="tel:112">
+            <span className="sos-call-icon" aria-hidden>
+              <Icon name="phone" size={22} />
+            </span>
+            <div className="sos-call-text">
+              <strong>{t("Call 112")}</strong>
+              <span>{t("All India Police, Ambulance & Fire")}</span>
+            </div>
+          </a>
+
+          <button type="button" className="btn sos-alert" onClick={alertContacts}>
+            <Icon name="users" size={17} />
+            <span>{t("Message my trusted contacts with my location")}</span>
+          </button>
+        </div>
+
         {status && <p className="share-status" aria-live="polite">{status}</p>}
-        <HelplineList />
-        <p className="note">{t("Calls go through your phone. On a computer, use your phone to call.")}</p>
+
+        <div className="sos-directory">
+          <span className="sos-directory-label">{t("24×7 VERIFIED HELPLINES (TOLL-FREE)")}</span>
+          <HelplineList />
+        </div>
+
+        <p className="note sos-footnote">{t("Calls go through your phone. On a computer, use your phone to call.")}</p>
       </dialog>
     </>
   );
@@ -88,25 +135,42 @@ export function RouteHelp({ points, total }: { points: HelpPoint[]; total: numbe
   if (!points.length) {
     return (
       <section className="route-help">
-        <h3>{t("Help along this route")}</h3>
+        <div className="route-help-head">
+          <Icon name="shield" size={18} />
+          <h3>{t("Help along this route")}</h3>
+        </div>
         <p className="note">{t("No hospital or police station mapped close to this route. Use 112 in an emergency.")}</p>
         <HelplineList compact />
       </section>
     );
   }
+
   return (
     <section className="route-help" aria-label="Help along this route">
-      <h3>{t("Help along this route")}</h3>
+      <div className="route-help-head">
+        <div className="route-help-title">
+          <span className="along-badge">SECURITY & MEDICAL</span>
+          <h3>{t("Help along this route")}</h3>
+        </div>
+        <span className="help-points-count">{points.length} {t("stations nearby")}</span>
+      </div>
+
       <ul className="help-points">
         {points.map((p, i) => (
-          <li key={i}>
+          <li key={i} className={`hp-item hp-${p.kind}`}>
             <div className="hp-top">
-              <span className={`hp-kind ${p.kind}`}>{p.kind === "police" ? t("Police") : t("Hospital")}</span>
+              <span className={`hp-kind ${p.kind}`}>
+                <Icon name={p.kind === "police" ? "police" : "hospital"} size={14} />
+                <span>{p.kind === "police" ? t("Police") : t("Hospital")}</span>
+              </span>
               <span className="hp-name">{p.name}</span>
               {p.phone ? (
-                <a className="hp-call" href={`tel:${p.phone}`}>{t("Call")}</a>
+                <a className="hp-call" href={`tel:${p.phone}`} aria-label={`${t("Call")} ${p.name}`}>
+                  <Icon name="phone" size={13} />
+                  <span>{t("Call")}</span>
+                </a>
               ) : (
-                <span className="hp-nophone muted">{t("no number listed")}</span>
+                <span className="hp-nophone muted">{t("no number")}</span>
               )}
             </div>
             <div className="hp-bar" role="img" aria-label={`${fmtDistance(p.at)} into the trip, ${fmtDistance(p.off)} off the route`}>
@@ -114,8 +178,9 @@ export function RouteHelp({ points, total }: { points: HelpPoint[]; total: numbe
               <span className={`hp-mark ${p.kind}`} style={{ left: `${Math.min(100, (p.at / Math.max(1, total)) * 100)}%` }} />
             </div>
             <div className="hp-meta muted">
-              {t("{a} into the trip · {o} off the route", { a: fmtDistance(p.at), o: fmtDistance(p.off) })}{p.open ? "" : ` · ${t("may be closed now")}`}
-              {p.phone && <> · {p.phone}</>}
+              <span>{t("{a} into trip · {o} off route", { a: fmtDistance(p.at), o: fmtDistance(p.off) })}</span>
+              {p.open ? <span className="hp-open-tag">Open 24/7</span> : <span className="hp-closed-tag">{t("may be closed")}</span>}
+              {p.phone && <span className="hp-phone-num">· {p.phone}</span>}
             </div>
           </li>
         ))}

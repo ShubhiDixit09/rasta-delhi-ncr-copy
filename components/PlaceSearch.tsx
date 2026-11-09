@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { LngLat } from "@/lib/geo";
+import Icon from "./Icon";
 
 export interface Picked {
   label: string;
@@ -28,6 +29,16 @@ function describe(p: PhotonFeature["properties"]): { label: string; detail: stri
     .join(", ");
   return { label, detail };
 }
+
+/** Curated transit and commerce hubs across Delhi NCR for quick 1-tap testing & routing. */
+const POPULAR_HUBS: Hit[] = [
+  { label: "Rajiv Chowk (Connaught Place)", detail: "Central Delhi · Yellow / Blue Line Interchange", point: [77.2183, 28.6328] },
+  { label: "DLF Cyber Hub", detail: "Gurugram, Haryana · Rapid Metro / Cyber City", point: [77.0887, 28.4950] },
+  { label: "Sector 18 Market (Atta)", detail: "Noida, Uttar Pradesh · Blue Line Metro", point: [77.3235, 28.5708] },
+  { label: "Hauz Khas Village", detail: "South Delhi · Yellow / Magenta Line", point: [77.1950, 28.5535] },
+  { label: "Indirapuram Habitat Centre", detail: "Ghaziabad, Uttar Pradesh", point: [77.3715, 28.6415] },
+  { label: "Saket District Centre", detail: "South Delhi · Select Citywalk / Yellow Line", point: [77.2189, 28.5284] },
+];
 
 export async function reverseGeocode(p: LngLat): Promise<string> {
   try {
@@ -120,14 +131,23 @@ export default function PlaceSearch({ label, marker, value, bbox, placeholder, o
     onPick({ label: h.label, point: h.point });
   };
 
+  const showList = open && (hits.length > 0 || !text.trim());
+  const displayHits = hits.length > 0 ? hits : POPULAR_HUBS;
+
   return (
     <div className="search">
       <label className="search-label">
-        <span className={`dot dot-${marker}`} aria-hidden>{marker}</span>
+        <span className={`dot dot-${marker}`} aria-hidden>
+          {marker === "A" ? (
+            <span className="dot-inner">A</span>
+          ) : (
+            <span className="dot-inner">B</span>
+          )}
+        </span>
         <span className="sr-only">{label}</span>
         <input
           role="combobox"
-          aria-expanded={open && hits.length > 0}
+          aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
           value={text}
@@ -137,25 +157,25 @@ export default function PlaceSearch({ label, marker, value, bbox, placeholder, o
             setText(e.target.value);
             if (!e.target.value) onPick(null);
           }}
-          onFocus={() => hits.length && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
           onKeyDown={(e) => {
-            if (!open || !hits.length) return;
+            if (!open || !displayHits.length) return;
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setActive((a) => (a + 1) % hits.length);
+              setActive((a) => (a + 1) % displayHits.length);
             } else if (e.key === "ArrowUp") {
               e.preventDefault();
-              setActive((a) => (a - 1 + hits.length) % hits.length);
+              setActive((a) => (a - 1 + displayHits.length) % displayHits.length);
             } else if (e.key === "Enter") {
               e.preventDefault();
-              choose(hits[active]);
+              choose(displayHits[active]);
             } else if (e.key === "Escape") {
               setOpen(false);
             }
           }}
         />
-        {text && (
+        {text ? (
           <button
             type="button"
             className="clear"
@@ -166,13 +186,23 @@ export default function PlaceSearch({ label, marker, value, bbox, placeholder, o
               onPick(null);
             }}
           >
-            ×
+            <Icon name="x" size={14} />
           </button>
+        ) : (
+          <span className="search-lead-ic" aria-hidden>
+            <Icon name="search" size={14} />
+          </span>
         )}
       </label>
-      {open && hits.length > 0 && (
+      {showList && (
         <ul id={listId} role="listbox" className="suggestions">
-          {hits.map((h, i) => (
+          {!text.trim() && hits.length === 0 && (
+            <li className="suggestions-category" aria-hidden>
+              <Icon name="sparkles" size={13} />
+              <span>POPULAR DESTINATIONS IN NCR</span>
+            </li>
+          )}
+          {displayHits.map((h, i) => (
             <li
               key={`${h.label}-${i}`}
               role="option"
@@ -184,8 +214,13 @@ export default function PlaceSearch({ label, marker, value, bbox, placeholder, o
               }}
               onMouseEnter={() => setActive(i)}
             >
-              <span className="s-label">{h.label}</span>
-              {h.detail && <span className="s-detail">{h.detail}</span>}
+              <div className="s-icon" aria-hidden>
+                <Icon name={h.detail.toLowerCase().includes("metro") ? "train" : "locate"} size={14} />
+              </div>
+              <div className="s-text">
+                <span className="s-label">{h.label}</span>
+                {h.detail && <span className="s-detail">{h.detail}</span>}
+              </div>
             </li>
           ))}
         </ul>
