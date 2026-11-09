@@ -2719,14 +2719,18 @@ dialog.sos-sheet::backdrop {
 }
 
 @media (max-width: 480px) {
-  /* Search HUD Card */
+  /* Search HUD Card - Resilient Phone Fit */
   .plan {
     left: 8px;
     right: 8px;
     top: max(8px, env(safe-area-inset-top));
+    max-width: calc(100vw - 16px);
+    width: auto;
     padding: 10px 12px 12px;
     border-radius: 18px;
     gap: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   .plan.collapsed {
     padding: 4px 6px;
@@ -2750,8 +2754,7 @@ dialog.sos-sheet::backdrop {
     font-size: 15px;
   }
   .brand-badge {
-    font-size: 8px;
-    letter-spacing: 0.03em;
+    display: none !important;
   }
   .live-dot-pulse {
     width: 4px;
@@ -2829,6 +2832,35 @@ dialog.sos-sheet::backdrop {
     padding: 5px 10px;
     font-size: 12px;
     gap: 5px;
+  }
+
+  /* Ultra-compact phone adjustments (<= 380px) */
+  @media (max-width: 380px) {
+    .plan {
+      left: 6px;
+      right: 6px;
+      padding: 9px 10px 10px;
+    }
+    .brand-title,
+    .brand-group h1,
+    .plan-head h1 {
+      font-size: 14px;
+    }
+    .install-btn {
+      max-width: 76px;
+      padding: 0 5px;
+      font-size: 9.5px;
+    }
+    .seg button {
+      font-size: 11.5px;
+      padding: 6px 1px;
+    }
+  }
+
+  @media (max-width: 350px) {
+    .install-btn {
+      display: none !important;
+    }
   }
 
   /* Bottom Route Sheet */
