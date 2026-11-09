@@ -6,7 +6,7 @@ import { t } from "@/lib/i18n";
 const NEXT: Record<ThemeMode, ThemeMode> = { auto: "light", light: "dark", dark: "auto" };
 const LABEL: Record<ThemeMode, string> = { auto: "Auto", light: "Light", dark: "Dark" };
 
-function Icon({ mode }: { mode: ThemeMode }) {
+function ThemeIcon({ mode }: { mode: ThemeMode }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   if (mode === "light") {
     return (
@@ -32,18 +32,20 @@ function Icon({ mode }: { mode: ThemeMode }) {
 }
 
 /** Cycles Auto (follow the device) → Light → Dark. */
-export default function ThemeToggle() {
-  const { mode } = useTheme();
+export default function ThemeToggle({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
+  const { mode, theme } = useTheme();
+  const activeIconMode = mode === "auto" ? theme : mode;
+
   return (
     <button
       type="button"
-      className="theme-toggle"
+      className={className ? `theme-toggle ${className}` : "theme-toggle"}
       onClick={() => setThemeMode(NEXT[mode])}
       aria-label={`Theme: ${LABEL[mode]}. Switch to ${LABEL[NEXT[mode]]}.`}
-      title={`Theme: ${LABEL[mode]}`}
+      title={`Theme: ${LABEL[mode]} (Tap to toggle)`}
     >
-      <Icon mode={mode} />
-      {mode === "dark" ? t("Dark mode") : t(LABEL[mode])}
+      <ThemeIcon mode={activeIconMode} />
+      {!iconOnly && <span className="theme-toggle-label">{t(LABEL[mode])}</span>}
     </button>
   );
 }

@@ -8,7 +8,7 @@ import type { Mode } from "@/lib/routing";
 import type { MetroOption } from "@/lib/metro";
 import type { Component, ScoredRoute } from "@/lib/score";
 import { useTheme } from "@/lib/theme";
-import { COMPONENT_LABEL, KIND_COLORS, LEGEND, fmtDistance, fmtDuration, scoreColor, summary } from "./format";
+import { COMPONENT_LABEL, KIND_COLORS, LEGEND, fmtDistance, fmtDuration, scoreColor, scoreRating, summary } from "./format";
 import PlaceSearch, { Picked, reverseGeocode } from "./PlaceSearch";
 import AlongRoute, { lightLabel } from "./AlongRoute";
 import Icon, { IconName } from "./Icon";
@@ -546,20 +546,22 @@ export default function App() {
               <Ring score={m.score} label={t("walk parts")} />
               <span className="rc-main">
                 <span className="rc-top">
-                  <strong>~{fmtDuration(m.duration)}</strong>
-                  <span className="muted">{changes === 0 ? t("direct") : t(pl(changes, "{n} change", "{n} changes"), { n: changes })}</span>
+                  <span className="rc-timing">
+                    <strong className="rc-duration">~{fmtDuration(m.duration)}</strong>
+                    <span className="rc-dist-badge">{changes === 0 ? t("direct") : t(pl(changes, "{n} change", "{n} changes"), { n: changes })}</span>
+                  </span>
+                  <span className="rc-badges">
+                    <span className={i === 0 ? "rc-badge blue" : "rc-badge"}>{label}</span>
+                    {i === 0 && m.duration < fastest && <span className="rc-badge good">{t("Faster than walking")}</span>}
+                  </span>
                 </span>
                 <span className="rc-why lines">
                   {m.ride.segments.map((sg, k) => (
                     <span key={k} className="line-chip"><i style={{ background: sg.colour }} />{sg.line.replace(/ Line$/, "")}</span>
                   ))}
                 </span>
-                <span className="tags">
-                  <span className={i === 0 ? "tag blue" : "tag"}>{label}</span>
-                  {i === 0 && m.duration < fastest && <span className="tag good">{t("Faster than walking")}</span>}
-                </span>
               </span>
-              <Icon name="right" className="chev" />
+              <div className="chev-wrap"><Icon name="right" className="chev" /></div>
             </button>
           </li>
         );
@@ -769,29 +771,71 @@ export default function App() {
           {metroMode && metroCard}
           {routes.map((r) => {
             const tags = [
-              r.duration === fastest && { t: t("Fastest"), c: "amber" },
-              r.score === bestScore && routes.length > 1 && { t: teen ? t("Top teen score") : t("Top night score"), c: "good" },
-            ].filter(Boolean) as { t: string; c: string }[];
+              r.duration === fastest && { t: t("Fastest"), c: "amber", icon: "sparkles" as const },
+              r.score === bestScore && routes.length > 1 && { t: teen ? t("Top teen score") : t("Top night score"), c: "good", icon: "shieldCheck" as const },
+            ].filter(Boolean) as { t: string; c: string; icon?: IconName }[];
             const s = r.stats;
+            const litPct = Math.round(s.litTaggedShare * 100);
             return (
               <li key={r.id}>
                 <button type="button" className={r.id === selected ? "rcard sel" : "rcard"} onClick={() => openRoute(r.id)}>
                   <Ring score={r.score} label={scoreName} />
                   <span className="rc-main">
                     <span className="rc-top">
-                      <strong>{fmtDuration(r.duration)}</strong>
-                      <span className="muted">
-                        {r.duration > fastest + 30 ? `+${t("{m} min", { m: Math.round((r.duration - fastest) / 60) })}` : fmtDistance(r.distance)}
+                      <span className="rc-timing">
+                        <strong className="rc-duration">{fmtDuration(r.duration)}</strong>
+                        <span className="rc-dist-badge">
+                          {r.duration > fastest + 30 ? `+${t("{m} min", { m: Math.round((r.duration - fastest) / 60) })}` : fmtDistance(r.distance)}
+                        </span>
                       </span>
+                      {tags.length > 0 && (
+                        <span className="rc-badges">
+                          {tags.map((tg) => (
+                            <span key={tg.t} className={`rc-badge ${tg.c}`}>
+                              {tg.icon && <Icon name={tg.icon} size={11} />}
+                              {tg.t}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                     </span>
-                    <span className="rc-why">
-                      {t("{n} open", { n: s.openPlaces })} · {s.longestGap >= 100 ? t("empty for {d}", { d: fmtDistance(s.longestGap) }) : t("no long empty stretch")}
+                    <span className="rc-telemetry-row">
+                      <span className="rc-stat" title={`${litPct}% tagged lit`}>
+                        <Icon name="bulb" size={12} className="stat-ico" />
+                        <span className="stat-num">{litPct}%</span>
+                        <span className="stat-unit">{t("lit")}</span>
+                      </span>
+                      <span className="rc-stat-sep" />
+                      <span className="rc-stat" title={`${s.openPlaces} open places`}>
+                        <Icon name="store" size={12} className="stat-ico" />
+                        <span className="stat-num">{s.openPlaces}</span>
+                        <span className="stat-unit">{t("open")}</span>
+                      </span>
+                      {s.cameras > 0 && (
+                        <>
+                          <span className="rc-stat-sep" />
+                          <span className="rc-stat" title={`${s.cameras} mapped CCTV cameras`}>
+                            <Icon name="cam" size={12} className="stat-ico" />
+                            <span className="stat-num">{s.cameras}</span>
+                            <span className="stat-unit">CCTV</span>
+                          </span>
+                        </>
+                      )}
+                      {s.longestGap >= 100 && (
+                        <>
+                          <span className="rc-stat-sep" />
+                          <span className="rc-stat rc-stat-quiet" title={`Dark or quiet stretch: ${fmtDistance(s.longestGap)}`}>
+                            <Icon name="alert" size={11} className="stat-ico" />
+                            <span className="stat-num">{fmtDistance(s.longestGap)}</span>
+                            <span className="stat-unit">quiet</span>
+                          </span>
+                        </>
+                      )}
                     </span>
-                    {tags.length > 0 && (
-                      <span className="tags">{tags.map((tg) => <span key={tg.t} className={`tag ${tg.c}`}>{tg.t}</span>)}</span>
-                    )}
                   </span>
-                  <Icon name="right" className="chev" />
+                  <div className="chev-wrap">
+                    <Icon name="right" className="chev" />
+                  </div>
                 </button>
               </li>
             );
@@ -860,8 +904,10 @@ export default function App() {
               }}
             >
               <span className="mini-route">
+                <span className="mini-pin a" />
                 <b>{short(from)}</b>
-                <Icon name="right" size={14} />
+                <Icon name="right" size={13} className="mini-arrow" />
+                <span className="mini-pin b" />
                 <b>{short(to)}</b>
               </span>
               <span className="chip">
@@ -873,11 +919,17 @@ export default function App() {
           ) : (
             <>
               <div className="plan-head">
-                <h1>
+                <div className="brand-group">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/icons/logo.svg" alt="" width={26} height={26} />
-                  Ghar Tak
-                </h1>
+                  <img src="/icons/logo.svg" alt="" width={26} height={26} className="brand-logo" />
+                  <div className="brand-info">
+                    <h1 className="brand-title">Ghar Tak</h1>
+                    <span className="brand-badge">
+                      <span className="live-dot-pulse" />
+                      Delhi NCR · Night Safety
+                    </span>
+                  </div>
+                </div>
                 <div className="plan-actions">
                   <button
                     type="button" className="persona-chip" onClick={() => setAskPersona(true)}
@@ -893,7 +945,7 @@ export default function App() {
                     {lang === "hi" ? "EN" : "हिं"}
                   </button>
                   <InstallApp />
-                  <ThemeToggle />
+                  <ThemeToggle iconOnly />
                   <button type="button" className="icon-btn" aria-label="How Ghar Tak works" onClick={() => setAbout(true)}>
                     <Icon name="info" />
                   </button>
@@ -1023,6 +1075,7 @@ export default function App() {
       </div>
 
       <div className="map-tools">
+        <ThemeToggle className="fab theme-fab" iconOnly />
         <button
           type="button" className={layersOpen ? "fab on" : "fab"} aria-label="Map layers" aria-expanded={layersOpen}
           onClick={() => setLayersOpen(!layersOpen)}
@@ -1083,13 +1136,18 @@ export default function App() {
 
 /** A score in a ring that fills to the score, coloured like the map. */
 function Ring({ score, label }: { score: number | null; label: string }) {
+  const col = scoreColor(score);
   return (
-    <span
-      className="ring" role="img" aria-label={`${label} ${score ?? "not available"}`}
-      style={{ "--p": score ?? 0, "--c": scoreColor(score) } as React.CSSProperties}
-    >
-      <b>{score ?? "–"}</b>
-    </span>
+    <div className="ring-container">
+      <span
+        className="ring" role="img" aria-label={`${label} ${score ?? "not available"}`}
+        style={{ "--p": score ?? 0, "--c": col } as React.CSSProperties}
+      >
+        <span className="ring-glow" style={{ background: col }} aria-hidden />
+        <b className="ring-score">{score ?? "–"}</b>
+      </span>
+      <span className="ring-label">{scoreRating(score)}</span>
+    </div>
   );
 }
 
