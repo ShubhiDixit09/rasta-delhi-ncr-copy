@@ -3253,3 +3253,280 @@ dialog.sos-sheet::backdrop {
   color: #64748b !important;
 }
 
+/* Admin (/admin), as it was before the 8 Nov restyle ------------------- */
+
+.admin {
+  font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: normal;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-head h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-login {
+  max-width: 320px;
+  margin-top: 24px;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-login input {
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+
+.admin-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.admin-tile {
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: grid;
+  gap: 2px;
+}
+
+.admin-tile b {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-tile span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.admin-card {
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.admin-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.admin-table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.admin-table th {
+  background: var(--raise);
+  color: var(--muted);
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+
+.admin-sheet {
+  margin-top: 16px;
+}
+
+.admin-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.admin-sheet-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.admin-sheet-frame {
+  width: 100%;
+  height: 70vh;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.admin-warn {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--warn-line);
+  background: var(--warn-bg);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.admin .error-inline {
+  color: var(--error-text);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+/* The admin page keeps the colours, buttons and links it had before the restyle. */
+.admin {
+  --bg: #0e1116;
+  --panel: #13171d;
+  --raise: #1a1f27;
+  --raise-2: #1e242d;
+  --line: #262c35;
+  --line-strong: #4a5260;
+  --text: #e8eaed;
+  --text-2: #c3c9d1;
+  --muted: #8e98a4;
+  --placeholder: #6b7480;
+  --hover: #252b35;
+  --chip-on: #2a313c;
+  --accent: #f5b942;
+  --accent-fill: #f5b942;
+  --on-accent: #0e1116;
+  --pin-a: #e8eaed;
+  --pin-ring: #0e1116;
+  --map-bg: #0b0d10;
+  --overlay: rgba(19, 23, 29, 0.92);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --good: #5cc28a;
+  --mid: #f5b942;
+  --bad: #ff6b5a;
+  --gap: #ff4d40;
+  --go: #1f6f43;
+  --warn-bg: #2a2312;
+  --warn-line: #6b5420;
+  --error-line: #5a2a27;
+  --error-text: #ffb4ab;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] .admin {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --raise: #f4f5f7;
+  --raise-2: #eef1f5;
+  --line: #e1e4e9;
+  --line-strong: #aab2be;
+  --text: #121821;
+  --text-2: #374151;
+  --muted: #5b6472;
+  --placeholder: #8a93a0;
+  --hover: #e9ecf1;
+  --chip-on: #e2e6ec;
+  --accent: #a85b06;
+  --accent-fill: #f0a92e;
+  --on-accent: #121821;
+  --pin-a: #121821;
+  --pin-ring: #ffffff;
+  --map-bg: #f2f3f5;
+  --overlay: rgba(255, 255, 255, 0.94);
+  --shadow: rgba(16, 24, 40, 0.18);
+  --good: #1d7f4b;
+  --mid: #a8650b;
+  --bad: #c2352b;
+  --gap: #e0362b;
+  --go: #1d7f4b;
+  --warn-bg: #fff6e3;
+  --warn-line: #f0c36d;
+  --error-line: #f3b8b0;
+  --error-text: #9b2c2c;
+  color-scheme: light;
+}
+
+:root:has(.admin) body {
+  background: #0e1116;
+}
+
+:root[data-theme="light"]:has(.admin) body {
+  background: #f4f5f7;
+}
+
+.admin .btn,
+.admin .btn:hover,
+.admin .btn:active {
+  gap: 0;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: none;
+  transform: none;
+  transition: none;
+  filter: none;
+}
+
+.admin .btn.primary,
+.admin .btn.primary:hover {
+  background: var(--go);
+  border-color: var(--go);
+  color: #fff;
+}
+
+.admin .link {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.admin :focus-visible {
+  outline: 2px solid var(--accent-fill);
+  outline-offset: 2px;
+}
+
+.admin .note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+:root:has(.admin),
+:root:has(.admin) body {
+  overflow-x: visible;
+  max-width: none;
+}
