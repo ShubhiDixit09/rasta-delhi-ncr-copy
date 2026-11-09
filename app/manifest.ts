@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Ghar Tak: night routes for Delhi NCR",
     short_name: "Ghar Tak",
-    description: "Compare routes across Delhi NCR by how open, lit and busy they are at the hour you travel.",
+    description: "Free women safety app for Delhi NCR: the safer way home at night, live location for family and SOS.",
     lang: "en-IN",
     start_url: "/?source=pwa",
     scope: "/",
