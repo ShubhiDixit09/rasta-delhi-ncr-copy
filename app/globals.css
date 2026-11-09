@@ -111,6 +111,8 @@ html,
 body {
   margin: 0;
   height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font: 14px/1.55 var(--font-sans);
@@ -721,6 +723,8 @@ dialog.contacts::backdrop {
   inset: 0;
   pointer-events: none;
   z-index: 10;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 .dock > * {
   pointer-events: auto;
@@ -743,6 +747,9 @@ dialog.contacts::backdrop {
   top: max(12px, env(safe-area-inset-top));
   left: 12px;
   right: 12px;
+  max-width: calc(100vw - 24px);
+  width: auto;
+  box-sizing: border-box;
   border-radius: 22px;
   padding: 12px 14px 14px;
   display: grid;
@@ -2499,7 +2506,8 @@ dialog.sos-sheet::backdrop {
 /* Desktop Command Center */
 .app.desk .dock {
   inset: 16px auto 16px 16px;
-  width: 420px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2703,6 +2711,12 @@ dialog.sos-sheet::backdrop {
    MOBILE-FIRST PHONE OPTIMIZATIONS (Screen width <= 480px)
    Engineered for iPhone, Samsung Galaxy, and all compact mobile handhelds
    ========================================================================== */
+
+@media (max-width: 600px) {
+  .brand-badge {
+    display: none !important;
+  }
+}
 
 @media (max-width: 480px) {
   /* Search HUD Card */
