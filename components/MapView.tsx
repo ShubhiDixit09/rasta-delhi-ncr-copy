@@ -146,6 +146,7 @@ export default function MapView({
       draw(m, l.routes, l.metro, l.selected, l.theme, l.hidden);
       applyBuses(m, l.showBuses);
       ready.current = true;
+      m.resize();
     });
     map.current = m;
     return () => {
@@ -171,6 +172,7 @@ export default function MapView({
     // diff: false forces a full replace, so "style.load" fires and the handler set up at init
     // re-adds Ghar Tak's layers. A diffed update can drop custom layers without that event.
     m.setStyle(STYLES[actual], { diff: false });
+    m.resize();
   }, [theme]);
 
   useEffect(() => {
