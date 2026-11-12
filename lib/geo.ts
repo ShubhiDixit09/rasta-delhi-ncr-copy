@@ -11,6 +11,8 @@ export function haversine(a: LngLat, b: LngLat): number {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+
+
 /** Metres per degree at NCR's latitude. Good to well under 1% across the coverage box. */
 export const M_PER_DEG_LAT = 110_950;
 export const M_PER_DEG_LON = 111_320 * Math.cos(28.5 * RAD);
