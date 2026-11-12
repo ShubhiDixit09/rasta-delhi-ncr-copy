@@ -3,7 +3,6 @@
 import { ThemeMode, setThemeMode, useTheme } from "@/lib/theme";
 import { t } from "@/lib/i18n";
 
-const NEXT: Record<ThemeMode, ThemeMode> = { auto: "light", light: "dark", dark: "auto" };
 const LABEL: Record<ThemeMode, string> = { auto: "Auto", light: "Light", dark: "Dark" };
 
 function ThemeIcon({ mode }: { mode: ThemeMode }) {
@@ -31,17 +30,18 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
   );
 }
 
-/** Cycles Auto (follow the device) → Light → Dark. */
+/** Toggles directly between the currently resolved light and dark themes. */
 export default function ThemeToggle({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
   const { mode, theme } = useTheme();
   const activeIconMode = mode === "auto" ? theme : mode;
+  const nextMode: ThemeMode = theme === "light" ? "dark" : "light";
 
   return (
     <button
       type="button"
       className={className ? `theme-toggle ${className}` : "theme-toggle"}
-      onClick={() => setThemeMode(NEXT[mode])}
-      aria-label={`Theme: ${LABEL[mode]}. Switch to ${LABEL[NEXT[mode]]}.`}
+      onClick={() => setThemeMode(nextMode)}
+      aria-label={`Theme: ${LABEL[mode]}. Switch to ${LABEL[nextMode]}.`}
       title={`Theme: ${LABEL[mode]} (Tap to toggle)`}
     >
       <ThemeIcon mode={activeIconMode} />
