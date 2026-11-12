@@ -955,7 +955,6 @@ export default function App() {
                     {lang === "hi" ? "EN" : "हिं"}
                   </button>
                   <InstallApp />
-                  <ThemeToggle iconOnly />
                   <button type="button" className="icon-btn" aria-label="How Ghar Tak works" onClick={() => setAbout(true)}>
                     <Icon name="info" />
                   </button>
@@ -1389,4 +1388,3 @@ function About({ meta }: { meta: Meta | null }) {
     </div>
   );
 }
-
