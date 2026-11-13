@@ -232,6 +232,8 @@ export default function App() {
   const [hidden, setHidden] = usePref<string[]>("ghartak-hidden-kinds", []);
   const [showBuses, setShowBuses] = usePref<boolean>("ghartak-bus-layer", false);
   const [layersOpen, setLayersOpen] = useState(false);
+  const layersRef = useRef<HTMLDivElement>(null);
+  const layersBtnRef = useRef<HTMLButtonElement>(null);
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   // Layout: the plan card (top), the sheet (bottom on phones, side panel on desktop) and its views.
   const [planOpen, setPlanOpen] = useState(true);
@@ -251,6 +253,27 @@ export default function App() {
   const wantRoute = useRef<number | null>(null);
   const restored = useRef(false);
   const skipPickerSync = useRef(false);
+
+  // Close the "Show on map" layers popup when clicking/tapping outside or pressing Escape.
+  useEffect(() => {
+    if (!layersOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (layersRef.current?.contains(target) || layersBtnRef.current?.contains(target)) return;
+      setLayersOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLayersOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [layersOpen]);
 
   useEffect(() => {
     const s = loadTrip();
@@ -1086,13 +1109,14 @@ export default function App() {
       <div className="map-tools">
         <ThemeToggle className="fab theme-fab" iconOnly />
         <button
+          ref={layersBtnRef}
           type="button" className={layersOpen ? "fab on" : "fab"} aria-label="Map layers" aria-expanded={layersOpen}
           onClick={() => setLayersOpen(!layersOpen)}
         >
           <Icon name="layers" size={19} />
         </button>
         {layersOpen && (
-          <div className="layers" aria-label="Map layers">
+          <div ref={layersRef} className="layers" aria-label="Map layers">
             <div className="layers-head">
               <b>{t("Show on map")}</b>
               <button type="button" className="icon-btn" aria-label="Close" onClick={() => setLayersOpen(false)}><Icon name="x" size={16} /></button>
