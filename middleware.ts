@@ -4,10 +4,19 @@ import type { NextRequest } from "next/server";
 const MAINTENANCE_MESSAGE = "Ghar Tak is temporarily unavailable for maintenance.";
 
 /**
- * Maintenance mode is OFF unless the MAINTENANCE_MODE environment variable is "on" (or "true"/"1").
- * Turn it on in Vercel (Settings → Environment Variables) and redeploy; remove it and redeploy to turn it off.
+ * Maintenance switch. MAINTENANCE_MODE (Vercel → Settings → Environment Variables) wins when set:
+ * "on"/"true"/"1" turns maintenance on, "off"/"false"/"0" turns it off. When it is not set,
+ * MAINTENANCE_DEFAULT decides. To bring the site back: set MAINTENANCE_DEFAULT to false (or
+ * MAINTENANCE_MODE=off in Vercel) and redeploy.
  */
-const maintenanceOn = () => /^(on|true|1)$/i.test(process.env.MAINTENANCE_MODE ?? "");
+const MAINTENANCE_DEFAULT = true;
+
+const maintenanceOn = () => {
+  const v = (process.env.MAINTENANCE_MODE ?? "").trim();
+  if (/^(on|true|1)$/i.test(v)) return true;
+  if (/^(off|false|0)$/i.test(v)) return false;
+  return MAINTENANCE_DEFAULT;
+};
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
